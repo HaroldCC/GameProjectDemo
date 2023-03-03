@@ -4,6 +4,8 @@
 build/
 vsxmake*/
 
+Bin/
+
 # MacOS Cache
 .DS_Store
 

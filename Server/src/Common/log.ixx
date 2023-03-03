@@ -1,8 +1,21 @@
+﻿/*************************************************************************
+> File Name       : log.ixx
+> Brief           : 日志模块
+> Author          : Harold
+> Mail            : 2106562095@qq.com
+> Github          : www.github.com/Haroldcc
+> Created Time    : 2023年03月03日  15时20分51秒
+************************************************************************/
+
 module;
 
+#include <vector>
 #include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_sinks.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/sinks/rotating_file_sink.h"
 
-export module common;
+export module common.log;
 
 class SourceLocation
 {
@@ -26,26 +39,49 @@ inline constexpr auto GetLogSourceLocation(const SourceLocation &location)
     return spdlog::source_loc{location.FileName(), static_cast<int>(location.LineNum()), location.FuncName()};
 }
 
-class CLog
-{
-public:
-    CLog &GetLogger()
-    {
-        static CLog logger;
-        return logger;
-    }
-
-    CLog(const CLog &)            = delete;
-    CLog &operator=(const CLog &) = delete;
-    CLog(CLog &&)                 = delete;
-
-private:
-    CLog()  = default;
-    ~CLog() = default;
-};
-
 export namespace logger
 {
+    class CLogger final
+    {
+    public:
+        static CLogger &GetLogger()
+        {
+            static CLogger logger;
+            return logger;
+        }
+
+        CLogger(const CLogger &)            = delete;
+        CLogger &operator=(const CLogger &) = delete;
+        CLogger(CLogger &&)                 = delete;
+
+        void SetLevel(spdlog::level::level_enum level)
+        {
+            _logger->set_level(level);
+        }
+
+    private:
+        CLogger() = default;
+
+        void InitLogger(std::string_view fileName, unsigned int level, size_t maxFileSize, size_t maxFiles)
+        {
+            auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(fileName, 1024 * 1024 * 5, 10);
+            fileSink->set_level(spdlog::level::trace);
+
+            auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+            consoleSink->set_level(spdlog::level::trace);
+
+            std::vector<spdlog::sink_ptr> sinks{fileSink, consoleSink};
+            _logger = std::make_shared<spdlog::logger>("MultiLogger", std::begin(sinks), std::end(sinks));
+
+            spdlog::set_default_logger(_logger);
+        }
+
+        ~CLogger() = default;
+
+    private:
+        std::shared_ptr<spdlog::logger> _logger;
+    };
+
     // info
     template <typename... Args>
     struct info
