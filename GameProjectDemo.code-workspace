@@ -1,0 +1,19 @@
+{
+    "folders": [
+        {
+            "name": "Root",
+            "path": "."
+        },
+        {
+            "name": "Server",
+            "path": "./Server",
+        }
+    ],
+    "settings": {
+        "C_Cpp.intelliSenseEngine": "disabled",
+        "editor.formatOnSave": true,
+        "cSpell.words": [
+            "spdlog"
+        ],
+    }
+}
