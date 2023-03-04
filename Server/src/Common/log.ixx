@@ -15,7 +15,7 @@ module;
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 
-export module common.log;
+export module common;
 
 class SourceLocation
 {
@@ -54,27 +54,31 @@ export namespace logger
         CLogger &operator=(const CLogger &) = delete;
         CLogger(CLogger &&)                 = delete;
 
-        void SetLevel(spdlog::level::level_enum level)
-        {
-            _logger->set_level(level);
-        }
+        // void SetLevel(spdlog::level::level_enum level)
+        // {
+        //     _logger->set_level(level);
+        // }
 
-    private:
-        CLogger() = default;
-
-        void InitLogger(std::string_view fileName, unsigned int level, size_t maxFileSize, size_t maxFiles)
+        void InitLogger(std::string_view fileName, size_t level, size_t maxFileSize, size_t maxFiles,
+                        std::string_view pattern = "%^[%Y-%m-%d %T%e] (%s:%#) %l: %v%$")
         {
-            auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(fileName, 1024 * 1024 * 5, 10);
-            fileSink->set_level(spdlog::level::trace);
+            auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(std::string(fileName),
+                                                                                   maxFileSize * 1024 * 1024, maxFiles);
+            fileSink->set_level(static_cast<spdlog::level::level_enum>(level));
+            fileSink->set_pattern(std::string(pattern));
 
             auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-            consoleSink->set_level(spdlog::level::trace);
+            consoleSink->set_level(static_cast<spdlog::level::level_enum>(level));
+            consoleSink->set_pattern(std::string(pattern));
 
             std::vector<spdlog::sink_ptr> sinks{fileSink, consoleSink};
             _logger = std::make_shared<spdlog::logger>("MultiLogger", std::begin(sinks), std::end(sinks));
 
             spdlog::set_default_logger(_logger);
         }
+
+    private:
+        CLogger() = default;
 
         ~CLogger() = default;
 

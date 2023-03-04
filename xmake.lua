@@ -13,6 +13,6 @@ function ExterRule()
 end
 
 add_rules("mode.release", "mode.debug")
-
+add_rules("plugin.vsxmake.autoupdate")
 
 includes("Server")

@@ -15,5 +15,12 @@
         "cSpell.words": [
             "spdlog"
         ],
+        "search.exclude": {
+            "**/node_modules": true,
+            "**/bower_components": true,
+            "**/*.code-search": true,
+            ".vscode/": true,
+            "build/": true,
+        },
     }
 }

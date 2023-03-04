@@ -1,4 +1,5 @@
-﻿
+﻿import common;
+
 #include <iostream>
 #include <string>
 #include "spdlog/spdlog.h"
@@ -7,13 +8,11 @@
 using std::cout;
 using std::endl;
 
-import common;
-
 using namespace std::literals;
 
 void testLog()
 {
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < 10000000; ++i)
     {
         logger::error("==={}===", i);
         logger::info("current level {{{}}}", spdlog::get_level());
@@ -26,20 +25,25 @@ void testLog()
     }
 }
 
-void testConfig()
-{
-    auto             config                 = toml::parse_file("test.toml");
-    std::string_view library_name           = config["library"]["name"].value_or(""sv);
-    std::string_view library_author         = config["library"]["authors"][0].value_or(""sv);
-    int64_t          depends_on_cpp_version = config["dependencies"]["cpp"].value_or(0);
-}
-
 int main(int argc, char **argv)
 {
-    logger::CLogger::GetLogger();
+    // 读取日志配置
+    toml::parse_result config = toml::parse_file("conf/LogConfig.toml");
+    if (config.empty())
+    {
+        return 0;
+    }
+
+    auto             logConfig   = config["Server"]["log"];
+    std::string_view logFileName = logConfig["name"].value_or(""sv);
+    size_t           level       = logConfig["level"].value_or(0);
+    size_t           maxFileSize = logConfig["maxfilesize"].value_or(0);
+    size_t           maxFiles    = logConfig["maxfiles"].value_or(0);
+    std::string_view pattern     = logConfig["pattern"].value_or("");
+
+    logger::CLogger::GetLogger().InitLogger(logFileName, level, maxFileSize, maxFiles, pattern);
 
     testLog();
-    testConfig();
 
     return 0;
 }
