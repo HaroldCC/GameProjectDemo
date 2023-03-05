@@ -86,15 +86,18 @@ public:
     static spdlog::filename_t
     calc_filename(const spdlog::filename_t &fileName, std::size_t index)
     {
-
-        if (index == 0u)
-        {
-            return fileName;
-        }
+        //if (index == 0u)
+        //{
+        //    return fileName;
+        //}
 
         spdlog::filename_t basename, ext;
         std::tie(basename, ext) = spdlog::details::file_helper::split_by_extension(fileName);
-        return spdlog::fmt_lib::format(SPDLOG_FILENAME_T("{}.{}{}"), basename, index, ext);
+        std::time_t timeVar;
+        std::time(&timeVar);
+        char pTimeStr[64] = {0};
+        std::strftime(pTimeStr, sizeof(pTimeStr), "%Y_%m_%d_%H_%M_%S", std::localtime(&timeVar));
+        return spdlog::fmt_lib::format(SPDLOG_FILENAME_T("{}{}.{}{}"), basename, pTimeStr, index, ext);
     }
 
     spdlog::filename_t filename()

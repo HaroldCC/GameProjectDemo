@@ -9,6 +9,10 @@ function ExterRule()
         set_suffixname("_d")
     end
 
+    if is_plat("windows") then
+        add_defines("_CRT_SECURE_NO_WARNINGS")
+    end
+
     set_targetdir("$(projectdir)/Bin/" .. "$(plat)-$(arch)-$(mode)")
 end
 
