@@ -12,16 +12,16 @@ using namespace std::literals;
 
 void testLog()
 {
-    for (int i = 0; i < 10000000; ++i)
+    for (int i = 0; i < 1; ++i)
     {
         logger::error("==={}===", i);
-        logger::info("current level {{{}}}", spdlog::get_level());
-        logger::info("changed level {}", spdlog::get_level());
+        logger::trace("current level {{{}}}", spdlog::get_level());
+        logger::debug("changed level {}", spdlog::get_level());
 
         logger::info("hello {}", "demo");
-        logger::error("this is an error{}", 101);
-        logger::debug("this is a debug log {}", 202);
-        logger::trace("this is a trace log {}", 303);
+        logger::warn("this is an error{}", 101);
+        logger::error("this is a debug log {}", 202);
+        logger::cirtical("this is a trace log {}", 303);
     }
 }
 
