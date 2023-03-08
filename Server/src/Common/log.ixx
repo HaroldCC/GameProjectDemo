@@ -18,22 +18,23 @@ module;
 #include "spdlog/details/null_mutex.h"
 
 export module common;
+export import :util;
 
 class SourceLocation
 {
 public:
     constexpr SourceLocation(const char *fileName = __builtin_FILE(), const char *funcName = __builtin_FUNCTION(),
-                             unsigned int lineNum = __builtin_LINE()) noexcept
+                             std::uint32_t lineNum = __builtin_LINE()) noexcept
         : _fileName(fileName), _funcName(funcName), _lineNum(lineNum) {}
 
-    constexpr const char        *FileName() const noexcept { return _fileName; }
-    constexpr const char        *FuncName() const noexcept { return _funcName; }
-    constexpr const unsigned int LineNum() const noexcept { return _lineNum; }
+    constexpr const char         *FileName() const noexcept { return _fileName; }
+    constexpr const char         *FuncName() const noexcept { return _funcName; }
+    constexpr const std::uint32_t LineNum() const noexcept { return _lineNum; }
 
 private:
-    const char        *_fileName;
-    const char        *_funcName;
-    const unsigned int _lineNum;
+    const char         *_fileName;
+    const char         *_funcName;
+    const std::uint32_t _lineNum;
 };
 
 inline constexpr auto GetLogSourceLocation(const SourceLocation &location)
@@ -86,10 +87,10 @@ public:
     static spdlog::filename_t
     calc_filename(const spdlog::filename_t &fileName, std::size_t index)
     {
-        //if (index == 0u)
+        // if (index == 0u)
         //{
-        //    return fileName;
-        //}
+        //     return fileName;
+        // }
 
         spdlog::filename_t basename, ext;
         std::tie(basename, ext) = spdlog::details::file_helper::split_by_extension(fileName);
@@ -267,6 +268,11 @@ export namespace logger
         void InitLogger(std::string_view fileName, size_t level, size_t maxFileSize, size_t maxFiles,
                         std::string_view pattern = "%^[%Y-%m-%d %T.%e] (%s:%#) %l: %v%$")
         {
+            if (pattern.empty())
+            {
+                pattern = GetDefaultLogPattern();
+            }
+
             auto fileSink = std::make_shared<HtmlFormatSink_mt>(std::string(fileName),
                                                                 maxFileSize * 1024 * 1024, maxFiles);
             fileSink->set_level(static_cast<spdlog::level::level_enum>(level));
@@ -288,6 +294,15 @@ export namespace logger
 
         ~CLogger() = default;
 
+        inline constexpr std::string_view GetDefaultLogPattern()
+        {
+#if defined(_DEBUG) || defined(DEBUG)
+            return "%^[%Y-%m-%d %T%e] (%s:%#) %l: %v%$";
+#else
+            return "%^[%Y-%m-%d %T%e] %l: %v%$";
+#endif
+        }
+
     private:
         std::shared_ptr<spdlog::logger> _logger;
     };
@@ -302,6 +317,9 @@ export namespace logger
         }
     };
 
+    template <typename... Args>
+    trace(fmt::format_string<Args...> fmt, Args &&...args) -> trace<Args...>;
+
     // debug
     template <typename... Args>
     struct debug
@@ -314,9 +332,6 @@ export namespace logger
 
     template <typename... Args>
     debug(fmt::format_string<Args...> fmt, Args &&...args) -> debug<Args...>;
-
-    template <typename... Args>
-    trace(fmt::format_string<Args...> fmt, Args &&...args) -> trace<Args...>;
 
     // info
     template <typename... Args>
@@ -357,17 +372,17 @@ export namespace logger
     template <typename... Args>
     error(fmt::format_string<Args...> fmt, Args &&...args) -> error<Args...>;
 
-    // cirtical
+    // critical
     template <typename... Args>
-    struct cirtical
+    struct critical
     {
-        constexpr cirtical(fmt::format_string<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr critical(fmt::format_string<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::critical, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    cirtical(fmt::format_string<Args...> fmt, Args &&...args) -> cirtical<Args...>;
+    critical(fmt::format_string<Args...> fmt, Args &&...args) -> critical<Args...>;
 
 }

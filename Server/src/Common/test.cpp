@@ -21,7 +21,7 @@ void testLog()
         logger::info("hello {}", "demo");
         logger::warn("this is an error{}", 101);
         logger::error("this is a debug log {}", 202);
-        logger::cirtical("this is a trace log {}", 303);
+        logger::critical("this is a trace log {}", 303);
     }
 }
 
