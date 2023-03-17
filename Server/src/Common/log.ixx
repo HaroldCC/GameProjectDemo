@@ -25,11 +25,24 @@ class SourceLocation
 public:
     constexpr SourceLocation(const char *fileName = __builtin_FILE(), const char *funcName = __builtin_FUNCTION(),
                              std::uint32_t lineNum = __builtin_LINE()) noexcept
-        : _fileName(fileName), _funcName(funcName), _lineNum(lineNum) {}
+        : _fileName(fileName), _funcName(funcName), _lineNum(lineNum)
+    {
+    }
 
-    constexpr const char         *FileName() const noexcept { return _fileName; }
-    constexpr const char         *FuncName() const noexcept { return _funcName; }
-    constexpr const std::uint32_t LineNum() const noexcept { return _lineNum; }
+    [[nodiscard]] constexpr const char *FileName() const noexcept
+    {
+        return _fileName;
+    }
+
+    [[nodiscard]] constexpr const char *FuncName() const noexcept
+    {
+        return _funcName;
+    }
+
+    [[nodiscard]] constexpr std::uint32_t LineNum() const noexcept
+    {
+        return _lineNum;
+    }
 
 private:
     const char         *_fileName;
@@ -49,7 +62,7 @@ public:
     HtmlFormatSink(spdlog::filename_t baseFileName, std::size_t maxSize,
                    std::size_t maxFiles, bool rotateOnOpen = false,
                    const spdlog::file_event_handlers &eventHandlers = {})
-        : _baseFilename(std::move(baseFileName)),
+        : _mBaseFilename(std::move(baseFileName)),
           _maxSize(maxSize), _maxFiles(maxFiles), _fileHelper(eventHandlers)
     {
         if (maxSize == 0)
@@ -61,7 +74,7 @@ public:
         {
             spdlog::throw_spdlog_ex("rotating sink constructor: max_files arg cannot exceed 200000");
         }
-        _fileHelper.open(calc_filename(_baseFilename, 0));
+        _fileHelper.open(calc_filename(_mBaseFilename, 0));
 
         // 写入html头
         spdlog::memory_buf_t htmlHeader;
@@ -92,9 +105,10 @@ public:
         //     return fileName;
         // }
 
-        spdlog::filename_t basename, ext;
+        spdlog::filename_t basename;
+        spdlog::filename_t ext;
         std::tie(basename, ext) = spdlog::details::file_helper::split_by_extension(fileName);
-        std::time_t timeVar;
+        std::time_t timeVar     = 0;
         std::time(&timeVar);
         char pTimeStr[64] = {0};
         std::strftime(pTimeStr, sizeof(pTimeStr), "%Y_%m_%d_%H_%M_%S", std::localtime(&timeVar));
@@ -154,12 +168,12 @@ private:
         _fileHelper.close();
         for (auto i = _maxFiles; i > 0; --i)
         {
-            filename_t src = calc_filename(_baseFilename, i - 1);
+            filename_t src = calc_filename(_mBaseFilename, i - 1);
             if (!path_exists(src))
             {
                 continue;
             }
-            filename_t target = calc_filename(_baseFilename, i);
+            filename_t target = calc_filename(_mBaseFilename, i);
 
             if (!rename_file_(src, target))
             {
@@ -235,7 +249,7 @@ private:
     }
 
 private:
-    spdlog::filename_t           _baseFilename;
+    spdlog::filename_t           _mBaseFilename;
     std::size_t                  _maxSize;
     std::size_t                  _maxFiles;
     std::size_t                  _currentSize;
@@ -385,4 +399,4 @@ export namespace logger
     template <typename... Args>
     critical(fmt::format_string<Args...> fmt, Args &&...args) -> critical<Args...>;
 
-}
+} // namespace logger

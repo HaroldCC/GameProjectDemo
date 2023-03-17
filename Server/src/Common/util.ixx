@@ -1,4 +1,4 @@
-module;
+﻿module;
 
 #include <format>
 #include <string_view>
@@ -12,7 +12,7 @@ export namespace util
     {
 #ifdef OS_PLATFORM_WINDOWS
         HANDLE hMutex = nullptr;
-        hMutex        = ::CreateMutex(NULL, FALSE, strProgressName.data());
+        hMutex        = ::CreateMutex(nullptr, FALSE, strProgressName.data());
         if (nullptr != hMutex)
         {
             if (::GetLastError() == ERROR_ALREADY_EXISTS)
@@ -53,4 +53,4 @@ export namespace util
         return false;
 #endif
     }
-}
+} // namespace util
