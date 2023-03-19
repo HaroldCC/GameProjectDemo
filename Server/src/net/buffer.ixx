@@ -187,6 +187,17 @@ export namespace net
         }
 
         /**
+         * @brief 在前面追加数据
+         *
+         * @param data 数据
+         * @param len 长度
+         */
+        void Prepend(const void *data, size_t len)
+        {
+            Prepend(static_cast<const uint8_t *>(data), len);
+        }
+
+        /**
          * @brief 读取数据
          *
          * @return 数据

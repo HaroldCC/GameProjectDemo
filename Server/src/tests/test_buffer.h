@@ -131,3 +131,18 @@ TEST_CASE("Test Buffer Grow Shrink")
 
     CHECK_EQ(buf.ReadableBytes(), 0);
 }
+
+TEST_CASE("Test Buffer Prepend")
+{
+    Buffer buffer;
+    buffer.Write(std::string(200, 'y'));
+    CHECK_EQ(buffer.ReadableBytes(), 200);
+    CHECK_EQ(buffer.WritableBytes(), Buffer::INITIAL_BUFFER_SIZE - 200);
+    CHECK_EQ(buffer.PrependableBytes(), Buffer::CHEAP_PREPEND);
+
+    int head = 123;
+    buffer.Prepend(&head, sizeof(head));
+    CHECK_EQ(buffer.ReadableBytes(), 204);
+    CHECK_EQ(buffer.WritableBytes(), Buffer::INITIAL_BUFFER_SIZE - 200);
+    CHECK_EQ(buffer.PrependableBytes(), Buffer::CHEAP_PREPEND - 4);
+}

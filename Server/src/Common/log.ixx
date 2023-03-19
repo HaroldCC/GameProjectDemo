@@ -18,7 +18,6 @@ module;
 #include "spdlog/details/null_mutex.h"
 
 export module common;
-export import :util;
 
 class SourceLocation
 {
