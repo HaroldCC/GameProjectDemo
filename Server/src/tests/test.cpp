@@ -1,5 +1,4 @@
 ﻿import common;
-import net;
 
 #include <iostream>
 #include <string>

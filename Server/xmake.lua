@@ -3,6 +3,7 @@ add_requires("spdlog", "doctest", "toml++", "asio")
 target("Common")
     set_kind("static")
     add_packages("spdlog", "doctest", "toml++", "asio")
+    add_includedirs("src/Common/")
     add_files("src/Common/*.ixx", "src/net/*.ixx")
     ExterRule()
 

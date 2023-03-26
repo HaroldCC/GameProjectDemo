@@ -7,9 +7,7 @@
 > Created Time    : 2023年03月06日  16时54分40秒
 ************************************************************************/
 
-#pragma once
-
-#include <errno.h>
+#include <cerrno>
 
 #if defined(WIN32) || defined(_WIN32) || defined(_WIN64) || defined(WIN64)
 #define OS_PLATFORM_WINDOWS
@@ -25,8 +23,8 @@
 #include <Windows.h>
 #include <mswsock.h>
 #include "Mstcpip.h"
-#include <time.h>
-#include <stdarg.h>
+#include <ctime>
+#include <cstdarg>
 #include <TlHelp32.h>
 #pragma comment(lib, "ws2_32")
 #pragma comment(lib, "Mswsock")

@@ -17,7 +17,7 @@ module;
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/details/null_mutex.h"
 
-export module common;
+export module common:log;
 
 class SourceLocation
 {

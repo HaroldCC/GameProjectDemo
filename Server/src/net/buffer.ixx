@@ -14,7 +14,7 @@ module;
 #include <string_view>
 #include <concepts>
 
-export module net;
+export module net:buffer;
 
 export namespace net
 {
@@ -115,7 +115,7 @@ export namespace net
          * @param data 数据
          */
         template <typename PODType>
-            requires std::is_pod_v<PODType>
+            requires std::is_standard_layout_v<PODType> && std::is_trivial_v<PODType>
         void Write(const PODType &data)
         {
             EnsureWritableBytes(sizeof(data));
@@ -130,7 +130,7 @@ export namespace net
          * @param data 数据
          */
         template <typename PODType>
-            requires std::is_pod_v<PODType>
+            requires std::is_standard_layout_v<PODType> && std::is_trivial_v<PODType>
         friend Buffer &operator<<(Buffer &buffer, const PODType &data)
         {
             buffer.Write(data);
@@ -203,7 +203,7 @@ export namespace net
          * @return 数据
          */
         template <typename PODType>
-            requires std::is_pod_v<PODType>
+            requires std::is_standard_layout_v<PODType> && std::is_trivial_v<PODType>
         PODType Read()
         {
             PODType result;
@@ -219,7 +219,7 @@ export namespace net
          * @param data 数据
          */
         template <typename PODType>
-            requires std::is_pod_v<PODType>
+            requires std::is_standard_layout_v<PODType> && std::is_trivial_v<PODType>
         friend Buffer &operator>>(Buffer &buffer, PODType &data)
         {
             data = buffer.Read<PODType>();

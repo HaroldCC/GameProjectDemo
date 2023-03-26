@@ -1,4 +1,5 @@
 ﻿#include <doctest/doctest.h>
+import common;
 import net;
 
 using net::Buffer;
@@ -34,6 +35,15 @@ TEST_CASE("Test Buffer Write Read")
         CHECK_EQ(buffer.PrependableBytes(), net::Buffer::CHEAP_PREPEND);
         CHECK_EQ(str3, std::string(350, 'x'));
     }
+
+    Buffer            bufferVec;
+    std::vector<char> vecChar(50, 'a');
+    bufferVec.Write(vecChar.data(), vecChar.size());
+    CHECK_EQ(vecChar.size(), 50);
+    CHECK_EQ(bufferVec.ReadableBytes(), vecChar.size());
+    CHECK_EQ(bufferVec.WritableBytes(), Buffer::INITIAL_BUFFER_SIZE - vecChar.size());
+    CHECK_EQ(bufferVec.PrependableBytes(), Buffer::CHEAP_PREPEND);
+    CHECK_EQ(vecChar, std::vector<char>(50, 'a'));
 
     // 测试中文
     net::Buffer       buffer;
