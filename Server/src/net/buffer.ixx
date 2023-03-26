@@ -263,7 +263,6 @@ export namespace net
             swap(other);
         }
 
-    private:
         /**
          * @brief 头部
          */
@@ -282,6 +281,7 @@ export namespace net
             return head + _writeIndex;
         }
 
+    private:
         /**
          * @brief 调整存取位置和大小
          * @param len 需要的大小

@@ -1,5 +1,4 @@
 ﻿module;
-
 #include <memory>
 #include <queue>
 #include <atomic>
@@ -7,6 +6,7 @@
 #include "include/platform.h"
 #include <asio/ip/tcp.hpp>
 
+import common;
 export module net:socket;
 import :buffer;
 
@@ -40,12 +40,73 @@ export namespace net
                 return false;
             }
 
-            while ()
+            while (HandleQueue())
+                ;
+        }
+
+        void CloseSocket()
+        {
+            if (_closed.exchange(true))
+            {
+                return;
+            }
+
+            std::error_code error;
+            _socket.shutdown(asio::socket_base::shutdown_send, error);
+            if (error)
+            {
+                logger::error("shutdown Socket ip:{} error, errorcode:{}, message:{}", GetRemoteIpAddress().to_string(), error.value(), error.message());
+            }
+
+            OnClose();
+        }
+
+        asio::ip::address GetRemoteIpAddress()
+        {
+            return _remoteAddress;
+        }
+    protected:
+        virtual void OnClose() {}
+
+        bool AsyncProcessQueue()
+        {
+            if (_isSendingSync)
+                return false;
+
+            _isSendingSync = true;
+            _socket.async_write_some(asio::null_buffers(), std::bind(&Socket<T>::SendHandler, this->shared_from_this(), std::placeholders::_1, std::placeholders::_2));
+            return false;
         }
 
     private:
         bool HandleQueue()
         {
+            if (_sendQueue.empty())
+                return false;
+
+            Buffer buffer = _sendQueue.front();
+            size_t readSize   = buffer.ReadableBytes();
+
+            std::error_code error;
+            size_t          byteSent = _socket.write_some(asio::buffer(buffer.Peek(), readSize), error);
+            if (error)
+            {
+                if (error == std::errc::operation_would_block || error == std::errc::resource_unavailable_try_again)
+                {
+                    return AsyncProcessQueue();
+                }
+
+                _sendQueue.pop();
+                if (_closing && _sendQueue.empty())
+                {
+                    CloseSocket();
+                }
+            }
+        }
+
+        void SendHandler(std::error_code error, size_t sendBytes)
+        {
+            
         }
 
         asio::ip::tcp::socket _socket;
