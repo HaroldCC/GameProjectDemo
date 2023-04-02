@@ -258,7 +258,7 @@ private:
 using HtmlFormatSink_mt = HtmlFormatSink<std::mutex>;
 using HtmlFormatSink_st = HtmlFormatSink<spdlog::details::null_mutex>;
 
-export namespace logger
+export namespace Log
 {
     class CLogger final
     {

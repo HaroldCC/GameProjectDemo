@@ -18,13 +18,13 @@ export module net:buffer;
 
 export namespace net
 {
-    class Buffer
+    class MessageBuffer
     {
     public:
         static constexpr size_t CHEAP_PREPEND       = 8;
         static constexpr size_t INITIAL_BUFFER_SIZE = 1024;
 
-        explicit Buffer(size_t initialSize = INITIAL_BUFFER_SIZE)
+        explicit MessageBuffer(size_t initialSize = INITIAL_BUFFER_SIZE)
             : _buffer(CHEAP_PREPEND + initialSize), _readIndex(CHEAP_PREPEND), _writeIndex(CHEAP_PREPEND)
         {
             assert(PrependableBytes() == CHEAP_PREPEND);
@@ -32,15 +32,15 @@ export namespace net
             assert(ReadableBytes() == 0);
         }
 
-        Buffer(const Buffer &buffer) = default;
+        MessageBuffer(const MessageBuffer &buffer) = default;
 
-        Buffer &operator=(Buffer buffer)
+        MessageBuffer &operator=(MessageBuffer buffer)
         {
             swap(buffer);
             return *this;
         }
 
-        Buffer(Buffer &&buffer) noexcept
+        MessageBuffer(MessageBuffer &&buffer) noexcept
             : _buffer(std::move(buffer._buffer)),
               _readIndex(buffer._readIndex),
               _writeIndex(buffer._writeIndex)
@@ -49,19 +49,24 @@ export namespace net
             buffer._writeIndex = 0;
         }
 
-        Buffer &operator=(Buffer &&buffer) noexcept
+        MessageBuffer &operator=(MessageBuffer &&buffer) noexcept
         {
             buffer.swap(*this);
             return *this;
         }
 
-        virtual ~Buffer() = default;
+        virtual ~MessageBuffer() = default;
 
-        void swap(Buffer &buffer) noexcept
+        void swap(MessageBuffer &buffer) noexcept
         {
             _buffer.swap(buffer._buffer);
             std::swap(_readIndex, buffer._readIndex);
             std::swap(_writeIndex, buffer._writeIndex);
+        }
+
+        uint8_t *Data()
+        {
+            return Peek();
         }
 
         /**
@@ -131,7 +136,7 @@ export namespace net
          */
         template <typename PODType>
             requires std::is_standard_layout_v<PODType> && std::is_trivial_v<PODType>
-        friend Buffer &operator<<(Buffer &buffer, const PODType &data)
+        friend MessageBuffer &operator<<(MessageBuffer &buffer, const PODType &data)
         {
             buffer.Write(data);
             return buffer;
@@ -220,7 +225,7 @@ export namespace net
          */
         template <typename PODType>
             requires std::is_standard_layout_v<PODType> && std::is_trivial_v<PODType>
-        friend Buffer &operator>>(Buffer &buffer, PODType &data)
+        friend MessageBuffer &operator>>(MessageBuffer &buffer, PODType &data)
         {
             data = buffer.Read<PODType>();
             return buffer;
@@ -257,7 +262,7 @@ export namespace net
          */
         void Shrink(size_t reserve)
         {
-            Buffer other;
+            MessageBuffer other;
             other.EnsureWritableBytes(ReadableBytes() + reserve);
             other.Write(Peek(), ReadableBytes());
             swap(other);
@@ -338,7 +343,7 @@ export namespace net
         size_t               _writeIndex{};
     };
 
-    void swap(Buffer &lhs, Buffer &rhs) noexcept
+    void swap(MessageBuffer &lhs, MessageBuffer &rhs) noexcept
     {
         lhs.swap(rhs);
     }

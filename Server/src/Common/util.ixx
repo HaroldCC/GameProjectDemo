@@ -2,12 +2,33 @@
 
 #include <format>
 #include <string_view>
+#include <type_traits>
 #include "include/platform.h"
 
 export module common:util;
 
 export namespace util
 {
+    template <typename T>
+    class Singleton
+    {
+    public:
+        // 使用了consteval来保证在编译时就初始化单例对象，避免了运行时的等待和竞争条件。
+        consteval static T &Instance()
+        {
+            static_assert(std::is_default_constructible_v<T>, "单例需要实现默认构造函数");
+            static T instance;
+            return instance;
+        }
+
+        Singleton(const Singleton &)            = delete;
+        Singleton &operator=(const Singleton &) = delete;
+
+    protected:
+        Singleton()  = default;
+        ~Singleton() = default;
+    };
+
     bool ProgressCanRun(const std::string_view strProgressName)
     {
 #ifdef OS_PLATFORM_WINDOWS

@@ -22,14 +22,16 @@ void testLog()
 {
     for (int i = 0; i < 1; ++i)
     {
-        logger::error("==={}===", i);
-        logger::trace("current level {{{}}}", spdlog::get_level());
-        logger::debug("changed level {}", spdlog::get_level());
+        Log::error("==={}===", i);
+        // Log::trace("current level {{{}}}", spdlog::get_level());
+        // Log::debug("changed level {}", spdlog::get_level());
 
-        logger::info("hello {}", "demo");
-        logger::warn("this is an error{}", 101);
-        logger::error("this is a debug log {}", 202);
-        logger::critical("this is a trace log {}", 303);
+        Log::info("hello {}", "demo");
+        Log::warn("this is an error{}", 101);
+        Log::error("this is a debug log {}", 202);
+        Log::critical("this is a trace log {}", 303);
+
+        Log::error("this is {}, this is a {}, this is {}", "hello", 1, "world");
     }
 
     auto i = asio::buffer("1234");
@@ -37,7 +39,6 @@ void testLog()
 
 void testBuffer()
 {
-    net::Buffer buffer;
 }
 
 int main(int argc, char **argv)
@@ -56,7 +57,7 @@ int main(int argc, char **argv)
     size_t           maxFiles    = logConfig["maxfiles"].value_or(0);
     std::string_view pattern     = logConfig["pattern"].value_or("");
 
-    logger::CLogger::GetLogger().InitLogger(logFileName, level, maxFileSize, maxFiles, pattern);
+    Log::CLogger::GetLogger().InitLogger(logFileName, level, maxFileSize, maxFiles, pattern);
 
     testLog();
 
