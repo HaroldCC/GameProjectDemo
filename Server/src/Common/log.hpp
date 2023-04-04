@@ -1,13 +1,12 @@
 ﻿/*************************************************************************
-> File Name       : log.ixx
+> File Name       : log.h
 > Brief           : 日志模块
 > Author          : Harold
 > Mail            : 2106562095@qq.com
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年03月03日  15时20分51秒
 ************************************************************************/
-
-module;
+#pragma once
 
 #include <vector>
 #include <mutex>
@@ -16,8 +15,6 @@ module;
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 #include "spdlog/details/null_mutex.h"
-
-export module common:log;
 
 class SourceLocation
 {
@@ -258,7 +255,7 @@ private:
 using HtmlFormatSink_mt = HtmlFormatSink<std::mutex>;
 using HtmlFormatSink_st = HtmlFormatSink<spdlog::details::null_mutex>;
 
-export namespace Log
+namespace Log
 {
     class CLogger final
     {

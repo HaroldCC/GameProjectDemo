@@ -1,13 +1,18 @@
 ﻿#include <memory.h>
+#include <string_view>
 #include "Common/include/platform.h"
 #include <asio.hpp>
 #include "testMsg.pb.h"
-
-import net;
-import common;
+#include "net/session.hpp"
 
 class ServerSession : public net::Session
 {
+public:
+    explicit ServerSession(asio::ip::tcp::socket &&socket)
+        : Session(std::move(socket))
+    {
+    }
+
 protected:
     void ReadHandler() override
     {
@@ -19,15 +24,15 @@ protected:
         net::MessageBuffer &buffer = GetReadBuffer();
         while (buffer.ReadableBytes() > 0)
         {
-            // Proto::TestMsg testProtoMsg;
-            // testProtoMsg.ParsePartialFromArray(buffer.Data(), buffer.ReadableBytes());
-            // std::string_view content = std::format("recv message content:{}, id:{}",
-            //                                        testProtoMsg.msg(), testProtoMsg.id());
-            // Log::info(content);
+            Proto::TestMsg testProtoMsg;
+            testProtoMsg.ParsePartialFromArray(buffer.Data(), (int)buffer.ReadableBytes());
+            std::string_view strContent = std::format("recv message content:{}, id:{}",
+                                                      testProtoMsg.msg(), testProtoMsg.id());
+            Log::info("{}", strContent);
 
-            // std::string        retMsg = std::format("server received message {{}}", content);
-            // net::MessageBuffer buffer(retMsg.size());
-            // buffer.Write(retMsg);
+            std::string        retMsg = std::format("server received message {{}}", strContent);
+            net::MessageBuffer buffer(retMsg.size());
+            buffer.Write(retMsg);
 
             AsyncSendMessage(std::move(buffer));
         }
@@ -48,12 +53,12 @@ private:
     void DoAccept()
     {
         auto self(shared_from_this());
-        _acceptor.async_accept([this, self](const std::error_code &error, const asio::ip::tcp::socket &socket)
+        _acceptor.async_accept([this, self](const std::error_code &error, asio::ip::tcp::socket socket)
                                {
                                    if (!error)
                                    {
-                                    auto session = std::make_shared<net::Session>(std::move(socket)) ;
-                                       session->StartSession();
+                                    auto pSession = std::make_shared<ServerSession>(std::move(socket)) ;
+                                       pSession->StartSession();
                                    }
 
                                    DoAccept(); });
@@ -68,7 +73,7 @@ int main()
     asio::io_context ioContext;
 
     asio::ip::tcp::endpoint endpoint(asio::ip::address_v4().any(), 9988);
-    Server(ioContext, endpoint);
+    Server                  server(ioContext, endpoint);
 
     ioContext.run();
 

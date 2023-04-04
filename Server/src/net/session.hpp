@@ -1,18 +1,24 @@
-﻿module;
+﻿/*************************************************************************
+> File Name       : session.h
+> Brief           : 网络会话
+> Author          : Harold
+> Mail            : 2106562095@qq.com
+> Github          : www.github.com/Haroldcc
+> Created Time    : 2023年04月04日  14时27分01秒
+************************************************************************/
+#pragma once
 
 #include <memory>
 #include <queue>
 #include <atomic>
 
 #include "Common/include/platform.h"
+#include "Common/log.hpp"
 #include "spdlog/spdlog.h"
 #include <asio.hpp>
+#include "buffer.hpp"
 
-export module net:session;
-import common;
-import :buffer;
-
-export namespace net
+namespace net
 {
     class Session : public std::enable_shared_from_this<Session>
     {
@@ -143,7 +149,6 @@ export namespace net
         asio::ip::tcp::socket     _socket;
         asio::ip::address         _remoteAddress;
         uint16_t                  _remotePort;
-        uint32_t                  _header;
         MessageBuffer             _readBuffer;
         std::queue<MessageBuffer> _writeBufferQueue;
 

@@ -1,22 +1,20 @@
 ﻿/*************************************************************************
-> File Name       : buffer.ixx
+> File Name       : buffer.h
 > Brief           : 缓冲区
 > Author          : Harold
 > Mail            : 2106562095@qq.com
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年03月15日  15时33分30秒
 ************************************************************************/
+#pragma once
 
-module;
 #include <vector>
 #include <cassert>
 #include <cstdint>
 #include <string_view>
 #include <concepts>
 
-export module net:buffer;
-
-export namespace net
+namespace net
 {
     class MessageBuffer
     {

@@ -1,10 +1,9 @@
-﻿import common;
-
-#include <iostream>
+﻿#include <iostream>
 #include <string>
 #include "spdlog/spdlog.h"
 #include "toml++/toml.h"
 #include "asio.hpp"
+#include "Common/log.hpp"
 
 // #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
@@ -34,7 +33,7 @@ void testLog()
         Log::error("this is {}, this is a {}, this is {}", "hello", 1, "world");
     }
 
-    auto i = asio::buffer("1234");
+    // auto i = asio::buffer("1234");
 }
 
 void testBuffer()

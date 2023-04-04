@@ -1,6 +1,5 @@
 ﻿#include <doctest/doctest.h>
-import common;
-import net;
+#include "net/buffer.hpp"
 
 using net::MessageBuffer;
 

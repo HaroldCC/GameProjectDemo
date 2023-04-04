@@ -13,10 +13,11 @@ function ExterRule()
         add_defines("_CRT_SECURE_NO_WARNINGS")
     end
 
-    set_targetdir("$(projectdir)/Bin/" .. "$(plat)-$(arch)-$(mode)")
+    -- set_targetdir("$(projectdir)/Bin/" .. "$(plat)-$(arch)-$(mode)")
 end
 
 add_rules("mode.release", "mode.debug")
 add_rules("plugin.vsxmake.autoupdate")
+
 
 includes("Server")

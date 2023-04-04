@@ -1,13 +1,9 @@
-﻿module;
-
-#include <format>
+﻿#include <format>
 #include <string_view>
 #include <type_traits>
 #include "include/platform.h"
 
-export module common:util;
-
-export namespace util
+namespace util
 {
     template <typename T>
     class Singleton
