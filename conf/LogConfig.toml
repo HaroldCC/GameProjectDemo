@@ -1,0 +1,7 @@
+﻿[Server]
+[Server.log]
+    name = "log/ServerLog.html"      # 日志文件名称
+    level = 0                   # 0:trace 1:debug 2:info 3:warn 4:err 5:critical 6:off
+    maxfilesize = 200           # 单个文件最大大小（单位：M）
+    maxfiles = 10               # 最大日志文件数
+    pattern = "%^[%Y-%m-%d %T.%e] (%s:%#) %l: %v%$" # 日志文件格式（参照spdlog）

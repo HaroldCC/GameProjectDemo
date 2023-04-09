@@ -1,5 +1,5 @@
 ﻿#include <doctest/doctest.h>
-#include "net/buffer.hpp"
+#include "Common/net/buffer.hpp"
 
 using net::MessageBuffer;
 
@@ -32,6 +32,7 @@ TEST_CASE("Test MessageBuffer Write Read")
     }
 
     MessageBuffer     bufferVec;
+    MessageBuffer     bufferVec;
     std::vector<char> vecChar(50, 'a');
     bufferVec.Write(vecChar.data(), vecChar.size());
     CHECK_EQ(vecChar.size(), 50);
@@ -40,6 +41,8 @@ TEST_CASE("Test MessageBuffer Write Read")
     CHECK_EQ(vecChar, std::vector<char>(50, 'a'));
 
     // 测试中文
+    net::MessageBuffer buffer;
+    const std::string  str("你好，缓冲区，hello world");
     net::MessageBuffer buffer;
     const std::string  str("你好，缓冲区，hello world");
     buffer.Write(str.data(), str.size());
