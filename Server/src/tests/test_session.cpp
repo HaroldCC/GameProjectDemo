@@ -3,7 +3,7 @@
 #include "Common/include/platform.h"
 #include <asio.hpp>
 #include "testMsg.pb.h"
-#include "net/session.hpp"
+#include "Common/net/session.hpp"
 
 class ServerSession : public net::Session
 {
@@ -25,9 +25,11 @@ protected:
         while (buffer.ReadableBytes() > 0)
         {
             Proto::TestMsg testProtoMsg;
-            testProtoMsg.ParsePartialFromArray(buffer.Data(), (int)buffer.ReadableBytes());
-            std::string_view strContent = std::format("recv message content:{}, id:{}",
-                                                      testProtoMsg.msg(), testProtoMsg.id());
+            testProtoMsg.ParseFromArray(buffer.GetReadPointer(), (int)buffer.ReadableBytes());
+            // buffer.Read(buffer.Data(), buffer.ReadableBytes());
+            buffer.ReadDone(buffer.ReadableBytes());
+            std::string strContent = std::format("recv message content:{}, id:{}",
+                                                 testProtoMsg.msg(), testProtoMsg.id());
             Log::info("{}", strContent);
 
             std::string        retMsg = std::format("server received message {{}}", strContent);
@@ -39,7 +41,7 @@ protected:
     }
 };
 
-class Server : std::enable_shared_from_this<Server>
+class Server
 {
 public:
     Server(asio::io_context &ioContext, const asio::ip::tcp::endpoint &endpoint)
@@ -48,20 +50,25 @@ public:
         DoAccept();
     }
 
-protected:
+    // void Start()
+    // {
+    //     DoAccept();
+    // }
+
 private:
     void DoAccept()
     {
-        auto self(shared_from_this());
-        _acceptor.async_accept([this, self](const std::error_code &error, asio::ip::tcp::socket socket)
-                               {
-                                   if (!error)
-                                   {
-                                    auto pSession = std::make_shared<ServerSession>(std::move(socket)) ;
-                                       pSession->StartSession();
-                                   }
+        _acceptor.async_accept(
+            [this](const std::error_code &errcode, asio::ip::tcp::socket socket)
+            {
+                if (!errcode)
+                {
+                    auto pSession = std::make_shared<ServerSession>(std::move(socket));
+                    pSession->StartSession();
+                }
 
-                                   DoAccept(); });
+                DoAccept();
+            });
     }
 
     asio::io_context       &_ioContext;
@@ -74,6 +81,7 @@ int main()
 
     asio::ip::tcp::endpoint endpoint(asio::ip::address_v4().any(), 9988);
     Server                  server(ioContext, endpoint);
+    // std::shared_ptr<Server> pServer = std::make_shared<Server>(ioContext, endpoint);
 
     ioContext.run();
 

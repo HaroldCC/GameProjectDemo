@@ -4,6 +4,7 @@
 #include "toml++/toml.h"
 #include "asio.hpp"
 #include "Common/log.hpp"
+#include "Common/net/session.hpp"
 
 // #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
@@ -34,10 +35,6 @@ void testLog()
     }
 
     // auto i = asio::buffer("1234");
-}
-
-void testBuffer()
-{
 }
 
 int main(int argc, char **argv)

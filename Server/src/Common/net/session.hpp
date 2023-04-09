@@ -8,15 +8,9 @@
 ************************************************************************/
 #pragma once
 
-#include <memory>
-#include <queue>
-#include <atomic>
-
-#include "Common/include/platform.h"
-#include "Common/log.hpp"
-#include "spdlog/spdlog.h"
-#include <asio.hpp>
+#include "Common/pch.h"
 #include "buffer.hpp"
+#include "Common/log.hpp"
 
 namespace net
 {
@@ -37,8 +31,8 @@ namespace net
                 return;
             }
 
-            std::error_code errcode;
-            _socket.close(errcode);
+            // std::error_code errcode;
+            // _socket.close(errcode);
         }
 
         void StartSession()
@@ -103,7 +97,7 @@ namespace net
             }
 
             auto self(shared_from_this());
-            _socket.async_read_some(asio::buffer(_readBuffer.Data(), _readBuffer.WritableBytes()),
+            _socket.async_read_some(asio::buffer(_readBuffer.GetWritPointer(), 1024),
                                     [this, self](const std::error_code &ec, std::size_t length)
                                     {
                                         if (ec)
@@ -111,6 +105,9 @@ namespace net
                                             CloseSession();
                                             return;
                                         }
+
+                                        // _readBuffer.WriteInBytes(length);
+                                        _readBuffer.WriteDone(length);
 
                                         ReadHandler();
                                     });
@@ -120,9 +117,13 @@ namespace net
         {
             auto           self(shared_from_this());
             MessageBuffer &buffer = _writeBufferQueue.front();
-            _socket.async_write_some(asio::buffer(buffer.Data(), buffer.ReadableBytes()),
+            _socket.async_write_some(asio::buffer(buffer.GetReadPointer(), buffer.ReadableBytes()),
                                      [this, self, &buffer](const std::error_code &ec, std::size_t length)
                                      {
+                                         //  buffer.ReadOutBytes(length);
+                                         //  buffer.Read(buffer.Data(), length);
+                                         buffer.ReadDone(length);
+
                                          if (ec)
                                          {
                                              CloseSession();
@@ -155,4 +156,4 @@ namespace net
         std::atomic_bool _closed;
         std::atomic_bool _closing;
     };
-}
+} // namespace net

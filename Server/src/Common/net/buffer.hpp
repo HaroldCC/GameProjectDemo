@@ -8,26 +8,20 @@
 ************************************************************************/
 #pragma once
 
-#include <vector>
-#include <cassert>
-#include <cstdint>
-#include <string_view>
-#include <concepts>
+#include "Common/pch.h"
 
 namespace net
 {
     class MessageBuffer
     {
+        using size_type = std::vector<uint8_t>::size_type;
+
     public:
-        static constexpr size_t CHEAP_PREPEND       = 8;
         static constexpr size_t INITIAL_BUFFER_SIZE = 1024;
 
         explicit MessageBuffer(size_t initialSize = INITIAL_BUFFER_SIZE)
-            : _buffer(CHEAP_PREPEND + initialSize), _readIndex(CHEAP_PREPEND), _writeIndex(CHEAP_PREPEND)
+            : _readIndex(0), _writeIndex(0), _buffer(initialSize)
         {
-            assert(PrependableBytes() == CHEAP_PREPEND);
-            assert(WritableBytes() == initialSize);
-            assert(ReadableBytes() == 0);
         }
 
         MessageBuffer(const MessageBuffer &buffer) = default;
@@ -39,9 +33,9 @@ namespace net
         }
 
         MessageBuffer(MessageBuffer &&buffer) noexcept
-            : _buffer(std::move(buffer._buffer)),
-              _readIndex(buffer._readIndex),
-              _writeIndex(buffer._writeIndex)
+            : _readIndex(buffer._readIndex),
+              _writeIndex(buffer._writeIndex),
+              _buffer(std::move(buffer._buffer))
         {
             buffer._readIndex  = 0;
             buffer._writeIndex = 0;
@@ -53,18 +47,38 @@ namespace net
             return *this;
         }
 
-        virtual ~MessageBuffer() = default;
+        ~MessageBuffer() = default;
 
         void swap(MessageBuffer &buffer) noexcept
         {
-            _buffer.swap(buffer._buffer);
             std::swap(_readIndex, buffer._readIndex);
             std::swap(_writeIndex, buffer._writeIndex);
+            _buffer.swap(buffer._buffer);
         }
 
-        uint8_t *Data()
+        uint8_t *GetBasePointer()
         {
-            return Peek();
+            return _buffer.data();
+        }
+
+        uint8_t *GetReadPointer()
+        {
+            return GetBasePointer() + _readIndex;
+        }
+
+        uint8_t *GetWritPointer()
+        {
+            return GetBasePointer() + _writeIndex;
+        }
+
+        void ReadDone(size_t len)
+        {
+            _readIndex += len;
+        }
+
+        void WriteDone(size_t len)
+        {
+            _writeIndex += len;
         }
 
         /**
@@ -85,16 +99,6 @@ namespace net
         [[nodiscard]] size_t WritableBytes() const
         {
             return _buffer.size() - _writeIndex;
-        }
-
-        /**
-         * @brief 可以在前面附加的字节数
-         *
-         * @return 字节数
-         */
-        [[nodiscard]] size_t PrependableBytes() const
-        {
-            return _readIndex;
         }
 
         /**
@@ -122,7 +126,7 @@ namespace net
         void Write(const PODType &data)
         {
             EnsureWritableBytes(sizeof(data));
-            std::memcpy(Tail(), &data, sizeof(data));
+            std::memcpy(GetWritPointer(), &data, sizeof(data));
             _writeIndex += sizeof(data);
         }
 
@@ -160,7 +164,7 @@ namespace net
         void Write(const uint8_t *data, size_t len)
         {
             EnsureWritableBytes(len);
-            std::copy(data, data + len, Tail());
+            std::copy(data, data + len, GetWritPointer());
             _writeIndex += len;
         }
 
@@ -177,30 +181,6 @@ namespace net
         }
 
         /**
-         * @brief 在前面追加数据
-         *
-         * @param data 数据
-         * @param len 长度
-         */
-        void Prepend(const uint8_t *data, size_t len)
-        {
-            assert(len <= PrependableBytes());
-            _readIndex -= len;
-            std::copy(data, data + len, Peek());
-        }
-
-        /**
-         * @brief 在前面追加数据
-         *
-         * @param data 数据
-         * @param len 长度
-         */
-        void Prepend(const void *data, size_t len)
-        {
-            Prepend(static_cast<const uint8_t *>(data), len);
-        }
-
-        /**
          * @brief 读取数据
          *
          * @return 数据
@@ -210,9 +190,18 @@ namespace net
         PODType Read()
         {
             PODType result;
-            std::memcpy(&result, Peek(), sizeof(result));
+            std::memcpy(&result, GetReadPointer(), sizeof(result));
             Adjustment(sizeof(PODType));
             return result;
+        }
+
+        size_t Read(void *data, size_t len)
+        {
+            assert(len <= ReadableBytes());
+            auto canReadLen = (std::min)(len, ReadableBytes());
+            std::memcpy(data, GetReadPointer(), canReadLen);
+            Adjustment(canReadLen);
+            return canReadLen;
         }
 
         /**
@@ -238,7 +227,7 @@ namespace net
         std::string ReadAsString(size_t len)
         {
             assert(len <= ReadableBytes());
-            std::string result(reinterpret_cast<const char *>(Peek()), len);
+            std::string result(reinterpret_cast<const char *>(GetReadPointer()), len);
             Adjustment(len);
             return result;
         }
@@ -262,27 +251,27 @@ namespace net
         {
             MessageBuffer other;
             other.EnsureWritableBytes(ReadableBytes() + reserve);
-            other.Write(Peek(), ReadableBytes());
+            other.Write(GetReadPointer(), ReadableBytes());
             swap(other);
         }
 
         /**
          * @brief 头部
          */
-        uint8_t *Peek()
-        {
-            uint8_t *head = &(*_buffer.begin());
-            return head + _readIndex;
-        }
+        // uint8_t *Peek()
+        // {
+        //     uint8_t *head = &(*_buffer.begin());
+        //     return head + _readIndex;
+        // }
 
         /**
          * @brief 尾部
          */
-        uint8_t *Tail()
-        {
-            uint8_t *head = &(*_buffer.begin());
-            return head + _writeIndex;
-        }
+        // uint8_t *Tail()
+        // {
+        //     uint8_t *head = &(*_buffer.begin());
+        //     return head + _writeIndex;
+        // }
 
     private:
         /**
@@ -307,8 +296,8 @@ namespace net
          */
         void AdjustmentAll()
         {
-            _readIndex  = CHEAP_PREPEND;
-            _writeIndex = CHEAP_PREPEND;
+            _readIndex  = 0;
+            _writeIndex = 0;
         }
 
         /**
@@ -318,7 +307,7 @@ namespace net
          */
         void MakeSpace(size_t len)
         {
-            if (WritableBytes() + PrependableBytes() < len + CHEAP_PREPEND)
+            if (WritableBytes() < len)
             {
                 // 可写的空间不足，扩容
                 _buffer.resize(_writeIndex + len);
@@ -326,19 +315,18 @@ namespace net
             else
             {
                 // 前缀空余过多，调整
-                assert(CHEAP_PREPEND < _readIndex);
+                // assert(CHEAP_PREPEND < _readIndex);
                 const size_t readableBytes = ReadableBytes();
-                std::copy(Peek(), Tail(), _buffer.begin() + CHEAP_PREPEND);
-                _readIndex  = CHEAP_PREPEND;
+                std::copy(GetReadPointer(), GetWritPointer(), _buffer.data());
+                _readIndex  = 0;
                 _writeIndex = _readIndex + readableBytes;
                 assert(readableBytes == ReadableBytes());
             }
         }
 
-    private:
+        size_type            _readIndex;
+        size_type            _writeIndex;
         std::vector<uint8_t> _buffer;
-        size_t               _readIndex{};
-        size_t               _writeIndex{};
     };
 
     void swap(MessageBuffer &lhs, MessageBuffer &rhs) noexcept

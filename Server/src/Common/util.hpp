@@ -1,7 +1,5 @@
-﻿#include <format>
-#include <string_view>
-#include <type_traits>
-#include "include/platform.h"
+﻿#pragma once
+#include "pch.h"
 
 namespace util
 {
