@@ -58,7 +58,7 @@ int main(int argc, char **argv)
     TestLog();
 
     //  引入单侧
-    doctest::Context testContext;
+    net::doctest::Context testContext;
     testContext.applyCommandLine(argc, argv);
 
     int res = testContext.run();

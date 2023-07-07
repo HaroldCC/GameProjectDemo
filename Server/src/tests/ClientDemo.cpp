@@ -1,5 +1,5 @@
 ﻿#include "Common/include/platform.h"
-#include "net/server.h"
+#include "Common/net/server.h"
 #include "MessageDef.pb.h"
 #include "Common/log.hpp"
 

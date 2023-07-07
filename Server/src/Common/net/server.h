@@ -18,7 +18,7 @@ namespace net
         Server(Server &&)                 = delete;
         Server &operator=(const Server &) = delete;
         Server &operator=(Server &&)      = delete;
-        explicit Server(asio::io_context &ioContext, uint16_t port);
+        Server(asio::io_context &ioContext, uint16_t port);
         virtual ~Server() = default;
 
         void Start()

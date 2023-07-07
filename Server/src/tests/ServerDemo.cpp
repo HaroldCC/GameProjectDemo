@@ -1,4 +1,4 @@
-﻿#include "net/server.h"
+﻿#include "Common/net/server.h"
 #include "Common/log.hpp"
 
 int main()
