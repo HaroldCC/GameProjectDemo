@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <mutex>
+#include <string_view>
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_sinks.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -255,6 +256,15 @@ private:
 using HtmlFormatSink_mt = HtmlFormatSink<std::mutex>;
 using HtmlFormatSink_st = HtmlFormatSink<spdlog::details::null_mutex>;
 
+inline constexpr std::string_view GetDefaultLogPattern()
+{
+#if defined(_DEBUG) || defined(DEBUG)
+    return "%^[%Y-%m-%d %T%e] (%s:%# %!) %l: %v%$";
+#else
+    return "%^[%Y-%m-%d %T%e] %l: %v%$";
+#endif
+}
+
 namespace Log
 {
     class CLogger final
@@ -276,13 +286,8 @@ namespace Log
         // }
 
         void InitLogger(std::string_view fileName, size_t level, size_t maxFileSize, size_t maxFiles,
-                        std::string_view pattern = "%^[%Y-%m-%d %T.%e] (%s:%#) %l: %v%$")
+                        std::string_view pattern = GetDefaultLogPattern())
         {
-            if (pattern.empty())
-            {
-                pattern = GetDefaultLogPattern();
-            }
-
             auto fileSink = std::make_shared<HtmlFormatSink_mt>(std::string(fileName),
                                                                 maxFileSize * 1024 * 1024, maxFiles);
             fileSink->set_level(static_cast<spdlog::level::level_enum>(level));
@@ -303,15 +308,6 @@ namespace Log
         CLogger() = default;
 
         ~CLogger() = default;
-
-        inline constexpr std::string_view GetDefaultLogPattern()
-        {
-#if defined(_DEBUG) || defined(DEBUG)
-            return "%^[%Y-%m-%d %T%e] (%s:%#) %l: %v%$";
-#else
-            return "%^[%Y-%m-%d %T%e] %l: %v%$";
-#endif
-        }
 
     private:
         std::shared_ptr<spdlog::logger> _logger;
@@ -395,4 +391,4 @@ namespace Log
     template <typename... Args>
     critical(fmt::format_string<Args...> fmt, Args &&...args) -> critical<Args...>;
 
-} // namespace logger
+} // namespace Log

@@ -1,6 +1,6 @@
 set_version("0.0.1", {build = "%Y%m%d%H%m"})
 
-set_warnings("all", "error")
+-- set_warnings("all", "error")
 set_languages("c++20")
 
 function ExterRule() 
@@ -13,7 +13,7 @@ function ExterRule()
         add_defines("_CRT_SECURE_NO_WARNINGS")
     end
 
-    -- set_targetdir("$(projectdir)/Bin/" .. "$(plat)-$(arch)-$(mode)")
+    set_targetdir("../Bin/$(plat)-$(arch)-$(mode)")
 end
 
 add_rules("mode.release", "mode.debug")

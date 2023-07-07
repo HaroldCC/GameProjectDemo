@@ -42,6 +42,7 @@ Checks: "
   -readability-magic-numbers,
   -readability-make-member-function-const,
   -readability-implicit-bool-conversion,
+  -readability-redundant-access-specifiers,
 
   "
 CheckOptions:

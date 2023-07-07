@@ -19,15 +19,11 @@ namespace net
     class MessageBuffer
     {
     public:
-        static constexpr size_t CHEAP_PREPEND       = 8;
         static constexpr size_t INITIAL_BUFFER_SIZE = 1024;
 
         explicit MessageBuffer(size_t initialSize = INITIAL_BUFFER_SIZE)
-            : _buffer(CHEAP_PREPEND + initialSize), _readIndex(CHEAP_PREPEND), _writeIndex(CHEAP_PREPEND)
+            : _buffer(initialSize)
         {
-            assert(PrependableBytes() == CHEAP_PREPEND);
-            assert(WritableBytes() == initialSize);
-            assert(ReadableBytes() == 0);
         }
 
         MessageBuffer(const MessageBuffer &buffer) = default;
@@ -62,11 +58,6 @@ namespace net
             std::swap(_writeIndex, buffer._writeIndex);
         }
 
-        uint8_t *Data()
-        {
-            return Peek();
-        }
-
         /**
          * @brief 可以读取的字节数
          *
@@ -88,16 +79,6 @@ namespace net
         }
 
         /**
-         * @brief 可以在前面附加的字节数
-         *
-         * @return 字节数
-         */
-        [[nodiscard]] size_t PrependableBytes() const
-        {
-            return _readIndex;
-        }
-
-        /**
          * @brief 确保内容可写
          *
          * @param len 需要长度
@@ -112,6 +93,21 @@ namespace net
             assert(WritableBytes() >= 0);
         }
 
+        uint8_t *GetBasePointer()
+        {
+            return _buffer.data();
+        }
+
+        uint8_t *GetReadPointer()
+        {
+            return GetBasePointer() + _readIndex;
+        }
+
+        uint8_t *GetWriterPointer()
+        {
+            return GetBasePointer() + _writeIndex;
+        }
+
         /**
          * @brief 写入pod类型数据
          *
@@ -122,7 +118,7 @@ namespace net
         void Write(const PODType &data)
         {
             EnsureWritableBytes(sizeof(data));
-            std::memcpy(Tail(), &data, sizeof(data));
+            std::memcpy(GetWriterPointer(), &data, sizeof(data));
             _writeIndex += sizeof(data);
         }
 
@@ -160,7 +156,7 @@ namespace net
         void Write(const uint8_t *data, size_t len)
         {
             EnsureWritableBytes(len);
-            std::copy(data, data + len, Tail());
+            std::copy(data, data + len, GetWriterPointer());
             _writeIndex += len;
         }
 
@@ -176,28 +172,9 @@ namespace net
             Write(byteData, len);
         }
 
-        /**
-         * @brief 在前面追加数据
-         *
-         * @param data 数据
-         * @param len 长度
-         */
-        void Prepend(const uint8_t *data, size_t len)
+        void WriteDone(size_t len)
         {
-            assert(len <= PrependableBytes());
-            _readIndex -= len;
-            std::copy(data, data + len, Peek());
-        }
-
-        /**
-         * @brief 在前面追加数据
-         *
-         * @param data 数据
-         * @param len 长度
-         */
-        void Prepend(const void *data, size_t len)
-        {
-            Prepend(static_cast<const uint8_t *>(data), len);
+            _writeIndex += len;
         }
 
         /**
@@ -210,7 +187,7 @@ namespace net
         PODType Read()
         {
             PODType result;
-            std::memcpy(&result, Peek(), sizeof(result));
+            std::memcpy(&result, GetReadPointer(), sizeof(result));
             Adjustment(sizeof(PODType));
             return result;
         }
@@ -238,7 +215,7 @@ namespace net
         std::string ReadAsString(size_t len)
         {
             assert(len <= ReadableBytes());
-            std::string result(reinterpret_cast<const char *>(Peek()), len);
+            std::string result(reinterpret_cast<const char *>(GetReadPointer()), len);
             Adjustment(len);
             return result;
         }
@@ -253,6 +230,11 @@ namespace net
             return ReadAsString(ReadableBytes());
         }
 
+        void ReadDone(size_t len)
+        {
+            _readIndex += len;
+        }
+
         /**
          * @brief 裁剪大小
          *
@@ -262,26 +244,8 @@ namespace net
         {
             MessageBuffer other;
             other.EnsureWritableBytes(ReadableBytes() + reserve);
-            other.Write(Peek(), ReadableBytes());
+            other.Write(GetWriterPointer(), ReadableBytes());
             swap(other);
-        }
-
-        /**
-         * @brief 头部
-         */
-        uint8_t *Peek()
-        {
-            uint8_t *head = &(*_buffer.begin());
-            return head + _readIndex;
-        }
-
-        /**
-         * @brief 尾部
-         */
-        uint8_t *Tail()
-        {
-            uint8_t *head = &(*_buffer.begin());
-            return head + _writeIndex;
         }
 
     private:
@@ -307,8 +271,8 @@ namespace net
          */
         void AdjustmentAll()
         {
-            _readIndex  = CHEAP_PREPEND;
-            _writeIndex = CHEAP_PREPEND;
+            _readIndex  = 0;
+            _writeIndex = 0;
         }
 
         /**
@@ -318,7 +282,7 @@ namespace net
          */
         void MakeSpace(size_t len)
         {
-            if (WritableBytes() + PrependableBytes() < len + CHEAP_PREPEND)
+            if (WritableBytes() < len)
             {
                 // 可写的空间不足，扩容
                 _buffer.resize(_writeIndex + len);
@@ -326,10 +290,9 @@ namespace net
             else
             {
                 // 前缀空余过多，调整
-                assert(CHEAP_PREPEND < _readIndex);
                 const size_t readableBytes = ReadableBytes();
-                std::copy(Peek(), Tail(), _buffer.begin() + CHEAP_PREPEND);
-                _readIndex  = CHEAP_PREPEND;
+                std::copy(GetReadPointer(), GetWriterPointer(), _buffer.begin());
+                _readIndex  = 0;
                 _writeIndex = _readIndex + readableBytes;
                 assert(readableBytes == ReadableBytes());
             }

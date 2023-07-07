@@ -26,8 +26,8 @@ protected:
         {
             Proto::TestMsg testProtoMsg;
             testProtoMsg.ParsePartialFromArray(buffer.Data(), (int)buffer.ReadableBytes());
-            std::string_view strContent = std::format("recv message content:{}, id:{}",
-                                                      testProtoMsg.msg(), testProtoMsg.id());
+            std::string strContent = std::format("recv message content:{}, id:{}",
+                                                 testProtoMsg.msg(), testProtoMsg.id());
             Log::info("{}", strContent);
 
             std::string        retMsg = std::format("server received message {{}}", strContent);

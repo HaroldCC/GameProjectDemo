@@ -17,7 +17,7 @@ using std::endl;
 
 using namespace std::literals;
 
-void testLog()
+void TestLog()
 {
     for (int i = 0; i < 1; ++i)
     {
@@ -43,22 +43,22 @@ void testBuffer()
 int main(int argc, char **argv)
 {
     // 读取日志配置
-    toml::parse_result config = toml::parse_file("conf/LogConfig.toml");
-    if (config.empty())
-    {
-        return 0;
-    }
+    // toml::parse_result config = toml::parse_file("conf/LogConfig.toml");
+    // if (config.empty())
+    // {
+    //     return 0;
+    // }
 
-    auto             logConfig   = config["Server"]["log"];
-    std::string_view logFileName = logConfig["name"].value_or(""sv);
-    size_t           level       = logConfig["level"].value_or(0);
-    size_t           maxFileSize = logConfig["maxfilesize"].value_or(0);
-    size_t           maxFiles    = logConfig["maxfiles"].value_or(0);
-    std::string_view pattern     = logConfig["pattern"].value_or("");
+    // auto             logConfig   = config["Server"]["log"];
+    // std::string_view logFileName = logConfig["name"].value_or(""sv);
+    // size_t           level       = logConfig["level"].value_or(0);
+    // size_t           maxFileSize = logConfig["maxfilesize"].value_or(0);
+    // size_t           maxFiles    = logConfig["maxfiles"].value_or(0);
+    // std::string_view pattern     = logConfig["pattern"].value_or("");
 
-    Log::CLogger::GetLogger().InitLogger(logFileName, level, maxFileSize, maxFiles, pattern);
+    Log::CLogger::GetLogger().InitLogger("log/log.html", 0, 10240, 10);
 
-    testLog();
+    TestLog();
 
     //  引入单侧
     doctest::Context testContext;
@@ -69,6 +69,20 @@ int main(int argc, char **argv)
     if (testContext.shouldExit())
     {
         return res;
+    }
+
+    // 测试
+    uint8_t              header = 1;
+    std::vector<uint8_t> buff{01, 22, 3, 4, 5};
+    std::vector<uint8_t> packet;
+    packet.reserve(sizeof(header) + buff.size());
+    packet.push_back(header);
+    packet.insert(packet.cend(), buff.begin(), buff.end());
+    Log::error("packet size:{}", packet.size());
+
+    for (auto &&i : packet)
+    {
+        Log::error("{}\n", i);
     }
 
     return 0;
