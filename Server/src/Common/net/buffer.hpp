@@ -8,21 +8,19 @@
 ************************************************************************/
 #pragma once
 
-#include <vector>
-#include <cassert>
-#include <cstdint>
-#include <string_view>
-#include <concepts>
+#include "Common/pch.h"
 
 namespace net
 {
     class MessageBuffer
     {
+        using size_type = std::vector<uint8_t>::size_type;
+
     public:
         static constexpr size_t INITIAL_BUFFER_SIZE = 1024;
 
         explicit MessageBuffer(size_t initialSize = INITIAL_BUFFER_SIZE)
-            : _buffer(initialSize)
+            : _readIndex(0), _writeIndex(0), _buffer(initialSize)
         {
         }
 
@@ -35,9 +33,9 @@ namespace net
         }
 
         MessageBuffer(MessageBuffer &&buffer) noexcept
-            : _buffer(std::move(buffer._buffer)),
-              _readIndex(buffer._readIndex),
-              _writeIndex(buffer._writeIndex)
+            : _readIndex(buffer._readIndex),
+              _writeIndex(buffer._writeIndex),
+              _buffer(std::move(buffer._buffer))
         {
             buffer._readIndex  = 0;
             buffer._writeIndex = 0;
@@ -49,13 +47,38 @@ namespace net
             return *this;
         }
 
-        virtual ~MessageBuffer() = default;
+        ~MessageBuffer() = default;
 
         void swap(MessageBuffer &buffer) noexcept
         {
-            _buffer.swap(buffer._buffer);
             std::swap(_readIndex, buffer._readIndex);
             std::swap(_writeIndex, buffer._writeIndex);
+            _buffer.swap(buffer._buffer);
+        }
+
+        uint8_t *GetBasePointer()
+        {
+            return _buffer.data();
+        }
+
+        uint8_t *GetReadPointer()
+        {
+            return GetBasePointer() + _readIndex;
+        }
+
+        uint8_t *GetWritPointer()
+        {
+            return GetBasePointer() + _writeIndex;
+        }
+
+        void ReadDone(size_t len)
+        {
+            _readIndex += len;
+        }
+
+        void WriteDone(size_t len)
+        {
+            _writeIndex += len;
         }
 
         /**
@@ -93,21 +116,6 @@ namespace net
             assert(WritableBytes() >= 0);
         }
 
-        uint8_t *GetBasePointer()
-        {
-            return _buffer.data();
-        }
-
-        uint8_t *GetReadPointer()
-        {
-            return GetBasePointer() + _readIndex;
-        }
-
-        uint8_t *GetWriterPointer()
-        {
-            return GetBasePointer() + _writeIndex;
-        }
-
         /**
          * @brief 写入pod类型数据
          *
@@ -118,7 +126,7 @@ namespace net
         void Write(const PODType &data)
         {
             EnsureWritableBytes(sizeof(data));
-            std::memcpy(GetWriterPointer(), &data, sizeof(data));
+            std::memcpy(GetWritPointer(), &data, sizeof(data));
             _writeIndex += sizeof(data);
         }
 
@@ -156,7 +164,7 @@ namespace net
         void Write(const uint8_t *data, size_t len)
         {
             EnsureWritableBytes(len);
-            std::copy(data, data + len, GetWriterPointer());
+            std::copy(data, data + len, GetWritPointer());
             _writeIndex += len;
         }
 
@@ -172,11 +180,6 @@ namespace net
             Write(byteData, len);
         }
 
-        void WriteDone(size_t len)
-        {
-            _writeIndex += len;
-        }
-
         /**
          * @brief 读取数据
          *
@@ -190,6 +193,15 @@ namespace net
             std::memcpy(&result, GetReadPointer(), sizeof(result));
             Adjustment(sizeof(PODType));
             return result;
+        }
+
+        size_t Read(void *data, size_t len)
+        {
+            assert(len <= ReadableBytes());
+            auto canReadLen = (std::min)(len, ReadableBytes());
+            std::memcpy(data, GetReadPointer(), canReadLen);
+            Adjustment(canReadLen);
+            return canReadLen;
         }
 
         /**
@@ -230,11 +242,6 @@ namespace net
             return ReadAsString(ReadableBytes());
         }
 
-        void ReadDone(size_t len)
-        {
-            _readIndex += len;
-        }
-
         /**
          * @brief 裁剪大小
          *
@@ -244,9 +251,27 @@ namespace net
         {
             MessageBuffer other;
             other.EnsureWritableBytes(ReadableBytes() + reserve);
-            other.Write(GetWriterPointer(), ReadableBytes());
+            other.Write(GetReadPointer(), ReadableBytes());
             swap(other);
         }
+
+        /**
+         * @brief 头部
+         */
+        // uint8_t *Peek()
+        // {
+        //     uint8_t *head = &(*_buffer.begin());
+        //     return head + _readIndex;
+        // }
+
+        /**
+         * @brief 尾部
+         */
+        // uint8_t *Tail()
+        // {
+        //     uint8_t *head = &(*_buffer.begin());
+        //     return head + _writeIndex;
+        // }
 
     private:
         /**
@@ -290,23 +315,21 @@ namespace net
             else
             {
                 // 前缀空余过多，调整
+                // assert(CHEAP_PREPEND < _readIndex);
                 const size_t readableBytes = ReadableBytes();
-                std::copy(GetReadPointer(), GetWriterPointer(), _buffer.begin());
+                std::copy(GetReadPointer(), GetWritPointer(), _buffer.data());
                 _readIndex  = 0;
                 _writeIndex = _readIndex + readableBytes;
                 assert(readableBytes == ReadableBytes());
             }
         }
 
-    private:
+        size_type            _readIndex;
+        size_type            _writeIndex;
         std::vector<uint8_t> _buffer;
-        size_t               _readIndex{};
-        size_t               _writeIndex{};
     };
 
     void swap(MessageBuffer &lhs, MessageBuffer &rhs) noexcept
     {
         lhs.swap(rhs);
     }
-
-} // namespace net
