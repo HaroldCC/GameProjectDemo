@@ -8,7 +8,20 @@
 ************************************************************************/
 #include "pch.h"
 #include "HttpSession.h"
+#include "MessageDef.pb.h"
 
-// void HttpSession::HandlerMessage()
-// {
-// }
+void HttpSession::ReadHandler()
+{
+    net::MessageBuffer &packet = GetReadBuffer();
+    MessageDef::Message message;
+
+    while (packet.ReadableBytes() > 0)
+    {
+        if (!message.SerializeToArray(packet.GetReadPointer(), (int)packet.ReadableBytes()))
+        {
+            break;
+        }
+
+        const std::string &content = message.content();
+    }
+}

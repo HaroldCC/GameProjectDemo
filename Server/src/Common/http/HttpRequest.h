@@ -7,6 +7,8 @@
 > Created Time    : 2023年07月13日  19时45分54秒
 ************************************************************************/
 #pragma once
+#include <vector>
+#include <string_view>
 
 enum class WebStatus
 {
@@ -28,4 +30,17 @@ enum class HttpType
     Trace   = 1 << 6,
     Connect = 1 << 7,
     Patch   = 1 << 8,
+};
+
+class HttpRequest
+{
+public:
+    bool Parse(std::string_view content);
+
+private:
+    std::string_view _body;
+    std::string_view _url;
+
+    using header_type = std::pair<std::string_view, std::string_view>;
+    std::vector<header_type> _header;
 };

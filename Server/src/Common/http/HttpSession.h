@@ -10,8 +10,8 @@
 #pragma once
 #include "net/session.h"
 
-class HttpSession final : public net::Session
+class HttpSession final : public net::ISession
 {
 protected:
-    // void HandlerMessage() override;
+    void ReadHandler() override;
 };
