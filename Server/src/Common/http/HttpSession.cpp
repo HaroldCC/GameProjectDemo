@@ -9,6 +9,6 @@
 #include "pch.h"
 #include "HttpSession.h"
 
-void HttpSession::HandlerMessage()
-{
-}
+// void HttpSession::HandlerMessage()
+// {
+// }

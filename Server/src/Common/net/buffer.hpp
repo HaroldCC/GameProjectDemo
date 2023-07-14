@@ -20,7 +20,7 @@ namespace net
         static constexpr size_t INITIAL_BUFFER_SIZE = 1024;
 
         explicit MessageBuffer(size_t initialSize = INITIAL_BUFFER_SIZE)
-            : _readIndex(0), _writeIndex(0), _buffer(initialSize)
+            : _buffer(initialSize)
         {
         }
 
@@ -114,6 +114,15 @@ namespace net
             }
 
             assert(WritableBytes() >= 0);
+        }
+
+        /**
+         * @brief 自动整理内存，并扩展容量
+         *
+         */
+        void EnsureFreeSpace()
+        {
+            MakeSpace(_buffer.size() * 3 / 2);
         }
 
         /**
@@ -324,8 +333,8 @@ namespace net
             }
         }
 
-        size_type            _readIndex;
-        size_type            _writeIndex;
+        size_type            _readIndex{};
+        size_type            _writeIndex{};
         std::vector<uint8_t> _buffer;
     };
 
@@ -334,4 +343,4 @@ namespace net
         lhs.swap(rhs);
     }
 
-}
+} // namespace net

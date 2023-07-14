@@ -13,5 +13,5 @@
 class HttpSession final : public net::Session
 {
 protected:
-    void HandlerMessage() override;
+    // void HandlerMessage() override;
 };

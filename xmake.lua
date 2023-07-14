@@ -10,6 +10,10 @@ function ExterRule()
     end
 
     if is_plat("windows") then
+        add_defines("WIN32")
+    end
+
+    if is_plat("windows") then
         add_defines("_CRT_SECURE_NO_WARNINGS")
     end
 

@@ -21,71 +21,46 @@ namespace net
         }
     }
 
-    void ISession::ReadHeader()
+    void ISession::StartSession()
     {
-        auto self(shared_from_this());
-        asio::async_read(_socket, asio::buffer(&_header, sizeof(_header)),
-                         [this, self](const std::error_code &errcode, std::size_t length)
-                         {
-                             if (errcode)
-                             {
-                                 Log::error("读取消息头出错：{}", errcode.message());
-                                 CloseSession();
-                                 return;
-                             }
-
-                             _header = asio::detail::socket_ops::network_to_host_long(_header);
-                             ReadBody();
-                         });
+        AsyncRead();
     }
 
-    void ISession::ReadBody()
+    void ISession::AsyncRead()
     {
         auto self(shared_from_this());
-        Log::debug("Header:{}", _header);
-        _readBuffer.EnsureWritableBytes(_header);
-        // todo buff 空间问题
-        asio::async_read(_socket, asio::buffer(_readBuffer.GetWritPointer(), _readBuffer.WritableBytes()),
-                         [this, self](const std::error_code &errcode, std::size_t length)
-                         {
-                             if (errcode)
-                             {
-                                 CloseSession();
-                                 Log::error("读取消息体出错:{}", errcode.message());
-                                 return;
-                             }
+        _readBuffer.EnsureFreeSpace();
+        _socket.async_read_some(asio::buffer(_readBuffer.GetWritPointer(), _readBuffer.WritableBytes()),
+                                [this, self](const std::error_code &errcode, size_t length)
+                                {
+                                    if (errcode)
+                                    {
+                                        Log::error("读取消息出错：{}", errcode.message());
+                                        CloseSession();
+                                        return;
+                                    }
 
-                             if (_readBuffer.ReadableBytes() >= _header)
-                             {
-                                 MessageDef::Message message;
-                                 if (message.ParseFromArray(_readBuffer.GetReadPointer(), (int)_readBuffer.ReadableBytes()))
-                                 {
-                                     // todo 处理消息
-                                     Log::debug("receive message[header:{}, content:{}]", message.header(), message.content());
+                                    // 更新向buff写入了多少数据
+                                    _readBuffer.WriteDone(length);
 
-                                     std::string response = "Hello Client";
-                                     self->SendMessage((uint32_t)response.size(), response);
-                                 }
-                             }
-                         });
+                                    ReadHandler();
+
+                                    AsyncRead();
+                                });
     }
 
     void ISession::SendMessage(uint32_t header, const std::string &message)
     {
         MessageDef::Message send;
         send.set_header(header);
+        Log::debug("header = {}", header);
         send.set_content(message);
         MessageBuffer content(send.ByteSizeLong());
-        if (send.SerializeToArray(content.GetReadPointer(), (int)content.ReadableBytes()))
+        if (send.SerializeToArray(content.GetWritPointer(), (int)content.WritableBytes()))
         {
-            header = asio::detail::socket_ops::host_to_network_long((int)content.ReadableBytes());
-            MessageBuffer packet(sizeof(header) + content.ReadableBytes());
-            // packet.reserve(sizeof(header) + content.size());
-            // packet.insert(packet.end(), (uint8_t *)&header, (uint8_t *)&header + sizeof(header));
-            // packet.insert(packet.cend(), content.begin(), content.end());
-            packet.Write(&header, sizeof(header));
-            packet.Write(content.GetReadPointer(), content.ReadableBytes());
-            _writeBufferQueue.push(packet);
+            content.WriteDone(send.ByteSizeLong());
+            Log::debug("send len:{}", content.ReadableBytes());
+            _writeBufferQueue.push(std::move(content));
 
             AsyncWrite();
         }
@@ -102,30 +77,141 @@ namespace net
             return;
         }
 
-        auto          self(shared_from_this());
-        MessageBuffer packet = _writeBufferQueue.front();
-        asio::async_write(_socket, asio::buffer(packet.GetReadPointer(), packet.ReadableBytes()),
-                          [this, self](const std::error_code &errcode, std::size_t length)
-                          {
-                              if (errcode)
-                              {
-                                  CloseSession();
-                                  Log::error("发送消息失败：{}", errcode.message());
-                              }
-                              else
-                              {
-                                  _writeBufferQueue.pop();
+        auto           self(shared_from_this());
+        MessageBuffer &packet = _writeBufferQueue.front();
+        _socket.async_write_some(asio::buffer(packet.GetReadPointer(), packet.ReadableBytes()),
+                                 [this, self](const std::error_code &errcode, std::size_t length)
+                                 {
+                                     if (errcode)
+                                     {
+                                         CloseSession();
+                                         Log::error("发送消息失败：{}", errcode.message());
+                                         return;
+                                     }
 
-                                  if (!_writeBufferQueue.empty())
-                                  {
-                                      AsyncWrite();
-                                  }
-                                  else if (_closing)
-                                  {
-                                      CloseSession();
-                                  }
-                              }
-                          });
+                                     // 更新从buff读出来多少数据
+                                     auto &&buff = _writeBufferQueue.front();
+                                     buff.ReadDone(length);
+
+                                     if (buff.ReadableBytes() == 0)
+                                     {
+                                         _writeBufferQueue.pop();
+                                     }
+
+                                     if (!_writeBufferQueue.empty())
+                                     {
+                                         AsyncWrite();
+                                     }
+                                     else if (_closing)
+                                     {
+                                         CloseSession();
+                                     }
+                                 });
+    }
+
+    void Session::ReadHandler()
+    {
+        MessageBuffer &packet = GetReadBuffer();
+        while (packet.ReadableBytes() > 0)
+        {
+            MessageDef::Message message;
+            if (!message.ParseFromArray(packet.GetReadPointer(), (int)packet.ReadableBytes()))
+            {
+                break;
+            }
+
+            packet.ReadDone(packet.ReadableBytes());
+
+            Log::debug("receive message[header:{}, content:{}]", message.header(), message.content());
+
+            std::string response = R"(Hello Client
+                                    // _header = asio::detail::socket_ops::network_to_host_long(_header);
+                                    // _buffer.resize(_header);
+
+                                    // 读取消息体
+                                    // asio::async_read(_socket, asio::buffer(_buffer),
+                                    //                  [this](const std::error_code &errcode, size_t len)
+                                    //                  {
+                                    //                      if (errcode)
+                                    //                      {
+                                    //                          Log::error("读取消息体出错：{}", errcode.message());
+                                    //                          return;
+                                    //                      }
+                                    // _header = asio::detail::socket_ops::network_to_host_long(_header);
+                                    // _buffer.resize(_header);
+
+                                    // 读取消息体
+                                    // asio::async_read(_socket, asio::buffer(_buffer),
+                                    //                  [this](const std::error_code &errcode, size_t len)
+                                    //                  {
+                                    //                      if (errcode)
+                                    //                      {
+                                    //                          Log::error("读取消息体出错：{}", errcode.message());
+                                    //                          return;
+                                    //                      }
+                                    // _header = asio::detail::socket_ops::network_to_host_long(_header);
+                                    // _buffer.resize(_header);
+
+                                    // 读取消息体
+                                    // asio::async_read(_socket, asio::buffer(_buffer),
+                                    //                  [this](const std::error_code &errcode, size_t len)
+                                    //                  {
+                                    //                      if (errcode)
+                                    //                      {
+                                    //                          Log::error("读取消息体出错：{}", errcode.message());
+                                    //                          return;
+                                    //                      }
+                                    // _header = asio::detail::socket_ops::network_to_host_long(_header);
+                                    // _buffer.resize(_header);
+
+                                    // 读取消息体
+                                    // asio::async_read(_socket, asio::buffer(_buffer),
+                                    //                  [this](const std::error_code &errcode, size_t len)
+                                    //                  {
+                                    //                      if (errcode)
+                                    //                      {
+                                    //                          Log::error("读取消息体出错：{}", errcode.message());
+                                    //                          return;
+                                    //                      }
+                                    // _header = asio::detail::socket_ops::network_to_host_long(_header);
+                                    // _buffer.resize(_header);
+
+                                    // 读取消息体
+                                    // asio::async_read(_socket, asio::buffer(_buffer),
+                                    //                  [this](const std::error_code &errcode, size_t len)
+                                    //                  {
+                                    //                      if (errcode)
+                                    //                      {
+                                    //                          Log::error("读取消息体出错：{}", errcode.message());
+                                    //                          return;
+                                    //                      }
+                                    // _header = asio::detail::socket_ops::network_to_host_long(_header);
+                                    // _buffer.resize(_header);
+
+                                    // 读取消息体
+                                    // asio::async_read(_socket, asio::buffer(_buffer),
+                                    //                  [this](const std::error_code &errcode, size_t len)
+                                    //                  {
+                                    //                      if (errcode)
+                                    //                      {
+                                    //                          Log::error("读取消息体出错：{}", errcode.message());
+                                    //                          return;
+                                    //                      }
+                                    // _header = asio::detail::socket_ops::network_to_host_long(_header);
+                                    // _buffer.resize(_header);
+
+                                    // 读取消息体
+                                    // asio::async_read(_socket, asio::buffer(_buffer),
+                                    //                  [this](const std::error_code &errcode, size_t len)
+                                    //                  {
+                                    //                      if (errcode)
+                                    //                      {
+                                    //                          Log::error("读取消息体出错：{}", errcode.message());
+                                    //                          return;
+                                    //                      }
+                        )";
+            SendMessage(response.size(), response);
+        }
     }
 
 } // namespace net

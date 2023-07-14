@@ -44,10 +44,7 @@ namespace net
             _socket.close(errcode);
         }
 
-        void StartSession()
-        {
-            ReadHeader();
-        }
+        void StartSession();
 
         void SendMessage(uint32_t header, const std::string &message);
 
@@ -74,12 +71,9 @@ namespace net
         }
 
     protected:
-        virtual void HandlerMessage() = 0;
+        virtual void ReadHandler() = 0;
 
-    private:
-        void ReadHeader();
-
-        void ReadBody();
+        void AsyncRead();
 
         void AsyncWrite();
 
@@ -102,8 +96,6 @@ namespace net
         using ISession::ISession;
 
     protected:
-        void HandlerMessage() override
-        {
-        }
+        void ReadHandler() override;
     };
 } // namespace net
