@@ -1,7 +1,8 @@
 ﻿#include "Common/include/platform.h"
 #include "Common/net/server.h"
 #include "MessageDef.pb.h"
-#include "Common/log.hpp"
+#include "Common/include/log.hpp"
+#include "Common/net/buffer.hpp"
 
 using asio::ip::address;
 using asio::ip::tcp;
@@ -66,20 +67,21 @@ public:
     {
         MessageDef::Message message;
         std::string         strTest = "Hello Server";
-        message.set_header(101);
+        message.set_header(5);
         message.set_content(strTest);
 
         std::vector<uint8_t> content(message.ByteSizeLong());
         if (message.SerializeToArray(content.data(), (int)content.size()))
         {
             uint32_t header = asio::detail::socket_ops::host_to_network_long((int)content.size());
-            // uint32_t             header = (int)content.size();
-            std::vector<uint8_t> buffSend;
-            buffSend.reserve(content.size() + sizeof(header));
-            // buffSend.push_back(*(uint8_t *)&header);
-            buffSend.insert(buffSend.end(), (uint8_t *)&header, (uint8_t *)&header + sizeof(header));
-            buffSend.insert(buffSend.cend(), content.begin(), content.end());
-            asio::async_write(_socket, asio::buffer(buffSend),
+            // std::vector<uint8_t> buffSend;
+            // buffSend.reserve(content.size() + sizeof(header));
+            // buffSend.insert(buffSend.end(), (uint8_t *)&header, (uint8_t *)&header + sizeof(header));
+            // buffSend.insert(buffSend.cend(), content.begin(), content.end());
+            net::MessageBuffer buffSend(content.size() + sizeof(header));
+            buffSend.Write(&header, sizeof(header));
+            buffSend.Write(content.data(), content.size());
+            asio::async_write(_socket, asio::buffer(buffSend.GetReadPointer(), buffSend.ReadableBytes()),
                               [this](const std::error_code &errcode, std::size_t len)
                               {
                                   if (errcode)
@@ -106,7 +108,7 @@ int main()
     Log::CLogger::GetLogger().InitLogger("log/ClientLog.html", 0, 10240, 10);
 
     asio::io_context ioContext;
-    tcp::endpoint    endpoint(address::from_string("127.0.0.1"), 8899);
+    tcp::endpoint    endpoint(address::from_string("127.0.0.1"), 10005);
 
     Client client(ioContext, endpoint);
     client.Start();

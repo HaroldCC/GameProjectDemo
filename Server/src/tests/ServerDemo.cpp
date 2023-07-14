@@ -1,5 +1,5 @@
 ﻿#include "Common/net/server.h"
-#include "Common/log.hpp"
+#include "Common/include/log.hpp"
 
 int main()
 {
@@ -7,7 +7,7 @@ int main()
 
     asio::io_context ioContext;
 
-    net::Server server(ioContext, 8899);
+    net::Server server(ioContext, 10005);
     server.Start();
 
     ioContext.run();

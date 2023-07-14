@@ -9,44 +9,45 @@
 #pragma once
 
 #include <cstdint>
+#include <source_location>
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/base_sink.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-class SourceLocation
+// class SourceLocation
+//{
+// public:
+//     constexpr SourceLocation(const char *fileName = __builtin_FILE(), const char *funcName = __builtin_FUNCTION(),
+//                              std::uint32_t lineNum = __builtin_LINE()) noexcept
+//         : _fileName(fileName), _funcName(funcName), _lineNum(lineNum)
+//     {
+//     }
+//
+//     [[nodiscard]] constexpr const char *FileName() const noexcept
+//     {
+//         return _fileName;
+//     }
+//
+//     [[nodiscard]] constexpr const char *FuncName() const noexcept
+//     {
+//         return _funcName;
+//     }
+//
+//     [[nodiscard]] constexpr std::uint32_t LineNum() const noexcept
+//     {
+//         return _lineNum;
+//     }
+//
+// private:
+//     const char         *_fileName;
+//     const char         *_funcName;
+//     const std::uint32_t _lineNum;
+// };
+
+inline constexpr auto GetLogSourceLocation(const std::source_location &location)
 {
-public:
-    constexpr SourceLocation(const char *fileName = __builtin_FILE(), const char *funcName = __builtin_FUNCTION(),
-                             std::uint32_t lineNum = __builtin_LINE()) noexcept
-        : _fileName(fileName), _funcName(funcName), _lineNum(lineNum)
-    {
-    }
-
-    [[nodiscard]] constexpr const char *FileName() const noexcept
-    {
-        return _fileName;
-    }
-
-    [[nodiscard]] constexpr const char *FuncName() const noexcept
-    {
-        return _funcName;
-    }
-
-    [[nodiscard]] constexpr std::uint32_t LineNum() const noexcept
-    {
-        return _lineNum;
-    }
-
-private:
-    const char         *_fileName;
-    const char         *_funcName;
-    const std::uint32_t _lineNum;
-};
-
-inline constexpr auto GetLogSourceLocation(const SourceLocation &location)
-{
-    return spdlog::source_loc{location.FileName(), static_cast<int>(location.LineNum()), location.FuncName()};
+    return spdlog::source_loc{location.file_name(), static_cast<int>(location.line()), location.function_name()};
 }
 
 template <typename Mutex>
@@ -314,78 +315,77 @@ namespace Log
     template <typename... Args>
     struct trace
     {
-        constexpr trace(fmt::format_string<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr trace(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::trace, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    trace(fmt::format_string<Args...> fmt, Args &&...args) -> trace<Args...>;
+    trace(spdlog::format_string_t<Args...> fmt, Args &&...args) -> trace<Args...>;
 
     // debug
     template <typename... Args>
     struct debug
     {
-        constexpr debug(fmt::format_string<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr debug(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::debug, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    debug(fmt::format_string<Args...> fmt, Args &&...args) -> debug<Args...>;
+    debug(spdlog::format_string_t<Args...> fmt, Args &&...args) -> debug<Args...>;
 
     // info
     template <typename... Args>
     struct info
     {
-        constexpr info(fmt::format_string<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr info(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::info, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    info(fmt::format_string<Args...> fmt, Args &&...args) -> info<Args...>;
+    info(spdlog::format_string_t<Args...> fmt, Args &&...args) -> info<Args...>;
 
     // warn
     template <typename... Args>
     struct warn
     {
-        constexpr warn(fmt::format_string<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr warn(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::warn, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    warn(fmt::format_string<Args...> fmt, Args &&...args) -> warn<Args...>;
+    warn(spdlog::format_string_t<Args...> fmt, Args &&...args) -> warn<Args...>;
 
     // error
     template <typename... Args>
     struct error
     {
-        constexpr error(fmt::format_string<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr error(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::err, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    error(fmt::format_string<Args...> fmt, Args &&...args) -> error<Args...>;
+    error(spdlog::format_string_t<Args...> fmt, Args &&...args) -> error<Args...>;
 
     // critical
     template <typename... Args>
     struct critical
     {
-        constexpr critical(fmt::format_string<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr critical(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::critical, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    critical(fmt::format_string<Args...> fmt, Args &&...args) -> critical<Args...>;
-
+    critical(spdlog::format_string_t<Args...> fmt, Args &&...args) -> critical<Args...>;
 } // namespace Log

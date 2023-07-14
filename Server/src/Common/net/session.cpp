@@ -1,11 +1,11 @@
 ﻿#include "session.h"
-#include "Common/log.hpp"
+#include "Common/include/log.hpp"
 #include "Common/include/platform.h"
 #include "MessageDef.pb.h"
 
 namespace net
 {
-    void Session::CloseSession()
+    void ISession::CloseSession()
     {
         if (_closed.exchange(true))
         {
@@ -21,7 +21,7 @@ namespace net
         }
     }
 
-    void Session::ReadHeader()
+    void ISession::ReadHeader()
     {
         auto self(shared_from_this());
         asio::async_read(_socket, asio::buffer(&_header, sizeof(_header)),
@@ -39,12 +39,13 @@ namespace net
                          });
     }
 
-    void Session::ReadBody()
+    void ISession::ReadBody()
     {
         auto self(shared_from_this());
         Log::debug("Header:{}", _header);
-        _readBuffer.resize(_header);
-        asio::async_read(_socket, asio::buffer(_readBuffer),
+        _readBuffer.EnsureWritableBytes(_header);
+        // todo buff 空间问题
+        asio::async_read(_socket, asio::buffer(_readBuffer.GetWritPointer(), _readBuffer.WritableBytes()),
                          [this, self](const std::error_code &errcode, std::size_t length)
                          {
                              if (errcode)
@@ -54,33 +55,36 @@ namespace net
                                  return;
                              }
 
-                             MessageDef::Message message;
-                             if (message.ParseFromArray(_readBuffer.data(), (int)_readBuffer.size()))
+                             if (_readBuffer.ReadableBytes() >= _header)
                              {
-                                 // todo 处理消息
-                                 Log::debug("receive message[header:{}, content:{}]", message.header(), message.content());
+                                 MessageDef::Message message;
+                                 if (message.ParseFromArray(_readBuffer.GetReadPointer(), (int)_readBuffer.ReadableBytes()))
+                                 {
+                                     // todo 处理消息
+                                     Log::debug("receive message[header:{}, content:{}]", message.header(), message.content());
 
-                                 std::string response = "Hello Client";
-                                 self->SendMessage((uint32_t)response.size(), response);
+                                     std::string response = "Hello Client";
+                                     self->SendMessage((uint32_t)response.size(), response);
+                                 }
                              }
                          });
     }
 
-    void Session::SendMessage(uint32_t header, const std::string &message)
+    void ISession::SendMessage(uint32_t header, const std::string &message)
     {
         MessageDef::Message send;
         send.set_header(header);
         send.set_content(message);
         MessageBuffer content(send.ByteSizeLong());
-        if (send.SerializeToArray(content.data(), (int)content.size()))
+        if (send.SerializeToArray(content.GetReadPointer(), (int)content.ReadableBytes()))
         {
-            header = asio::detail::socket_ops::host_to_network_long((int)content.size());
-            MessageBuffer packet;
-            packet.reserve(sizeof(header) + content.size());
-            // packet.push_back(*(uint8_t *)&header);
-            packet.insert(packet.end(), (uint8_t *)&header, (uint8_t *)&header + sizeof(header));
-            packet.insert(packet.cend(), content.begin(), content.end());
-            // packet.push_back(content.begin(), content.end());
+            header = asio::detail::socket_ops::host_to_network_long((int)content.ReadableBytes());
+            MessageBuffer packet(sizeof(header) + content.ReadableBytes());
+            // packet.reserve(sizeof(header) + content.size());
+            // packet.insert(packet.end(), (uint8_t *)&header, (uint8_t *)&header + sizeof(header));
+            // packet.insert(packet.cend(), content.begin(), content.end());
+            packet.Write(&header, sizeof(header));
+            packet.Write(content.GetReadPointer(), content.ReadableBytes());
             _writeBufferQueue.push(packet);
 
             AsyncWrite();
@@ -91,7 +95,7 @@ namespace net
         }
     }
 
-    void Session::AsyncWrite()
+    void ISession::AsyncWrite()
     {
         if (_writeBufferQueue.empty())
         {
@@ -100,7 +104,7 @@ namespace net
 
         auto          self(shared_from_this());
         MessageBuffer packet = _writeBufferQueue.front();
-        asio::async_write(_socket, asio::buffer(packet),
+        asio::async_write(_socket, asio::buffer(packet.GetReadPointer(), packet.ReadableBytes()),
                           [this, self](const std::error_code &errcode, std::size_t length)
                           {
                               if (errcode)

@@ -8,16 +8,41 @@
 ************************************************************************/
 #include "Common/include/platform.h"
 #include "server.h"
-#include "Common/log.hpp"
+#include "Common/include/log.hpp"
 #include "session.h"
 
 namespace net
 {
 
+    static thread_local bool gNetThreadFlag = false; // 网络线程标志
+
     Server::Server(asio::io_context &ioContext, uint16_t port)
         : _ioContext(ioContext), _accepter(ioContext,
                                            asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
     {
+    }
+
+    void Server::Start()
+    {
+        DoAccept();
+
+        _netThread = std::thread(
+            [this]()
+            {
+                gNetThreadFlag = true;
+                while (true)
+                {
+                    try
+                    {
+                        _ioContext.run();
+                        break; // 正常退出
+                    }
+                    catch (const std::exception &e)
+                    {
+                        Log::error("服务器异常退出:{}", e.what());
+                    }
+                }
+            });
     }
 
     void Server::DoAccept()

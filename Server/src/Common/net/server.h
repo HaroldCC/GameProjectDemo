@@ -7,6 +7,7 @@
 > Created Time    : 2023年07月06日  14时35分17秒
 ************************************************************************/
 #pragma once
+#include <thread>
 #include "asio.hpp"
 
 namespace net
@@ -21,15 +22,13 @@ namespace net
         Server(asio::io_context &ioContext, uint16_t port);
         virtual ~Server() = default;
 
-        void Start()
-        {
-            DoAccept();
-        }
+        void Start();
 
     private:
         void DoAccept();
 
     private:
+        std::thread             _netThread;
         asio::io_context       &_ioContext;
         asio::ip::tcp::acceptor _accepter;
     };

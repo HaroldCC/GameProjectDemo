@@ -12,21 +12,20 @@
 #include <queue>
 #include <atomic>
 #include <asio.hpp>
+#include "buffer.hpp"
 
 // #include "buffer.hpp"
 
 namespace net
 {
-    class Session final : public std::enable_shared_from_this<Session>
+    class ISession : public std::enable_shared_from_this<ISession>
     {
-        using MessageBuffer = std::vector<uint8_t>;
-
     public:
-        Session(const Session &)            = delete;
-        Session(Session &&)                 = delete;
-        Session &operator=(const Session &) = delete;
-        Session &operator=(Session &&)      = delete;
-        explicit Session(asio::ip::tcp::socket &&socket)
+        ISession(const ISession &)            = delete;
+        ISession(ISession &&)                 = delete;
+        ISession &operator=(const ISession &) = delete;
+        ISession &operator=(ISession &&)      = delete;
+        explicit ISession(asio::ip::tcp::socket &&socket)
             : _socket(std::move(socket)),
               _remoteAddress(_socket.remote_endpoint().address()),
               _remotePort(_socket.remote_endpoint().port()),
@@ -34,7 +33,7 @@ namespace net
         {
         }
 
-        virtual ~Session()
+        virtual ~ISession()
         {
             if (_closed)
             {
@@ -74,6 +73,9 @@ namespace net
             return _readBuffer;
         }
 
+    protected:
+        virtual void HandlerMessage() = 0;
+
     private:
         void ReadHeader();
 
@@ -92,5 +94,16 @@ namespace net
 
         std::atomic_bool _closed;
         std::atomic_bool _closing;
+    };
+
+    class Session : public ISession
+    {
+    public:
+        using ISession::ISession;
+
+    protected:
+        void HandlerMessage() override
+        {
+        }
     };
 } // namespace net

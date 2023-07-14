@@ -329,7 +329,9 @@ namespace net
         std::vector<uint8_t> _buffer;
     };
 
-    void swap(MessageBuffer &lhs, MessageBuffer &rhs) noexcept
+    inline void swap(MessageBuffer &lhs, MessageBuffer &rhs) noexcept
     {
         lhs.swap(rhs);
     }
+
+}

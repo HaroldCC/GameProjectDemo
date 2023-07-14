@@ -7,10 +7,13 @@ target("Common")
     -- add_rules("protobuf.cpp")
     -- add_files("src/proto/*.proto", {rules="protobuf.cpp"})
     set_pcxxheader("src/Common/pch.h")
+    add_includedirs("src/Common")
     add_files("src/Common/*.cpp")
     add_rules("protobuf.cpp")
     add_headerfiles("src/Common/**.hpp", "src/Common/**.h")
-    add_files("src/Common/net/MessageProto/**.proto", "src/Common/net/*.cpp")
+    add_files("src/Common/net/MessageProto/**.proto", 
+                "src/Common/net/*.cpp", 
+                "src/Common/http/*.cpp")
     ExterRule()
 
 -- target("tests")
