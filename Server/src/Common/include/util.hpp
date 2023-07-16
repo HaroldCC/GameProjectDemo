@@ -1,7 +1,10 @@
 ﻿#pragma once
-#include "pch.h"
+#include "platform.h"
+#include <ranges>
+#include <vector>
+#include <string_view>
 
-namespace util
+namespace Util
 {
     template <typename T>
     class Singleton
@@ -15,6 +18,8 @@ namespace util
             return instance;
         }
 
+        Singleton(Singleton &&)                 = delete;
+        Singleton &operator=(Singleton &&)      = delete;
         Singleton(const Singleton &)            = delete;
         Singleton &operator=(const Singleton &) = delete;
 
@@ -68,4 +73,19 @@ namespace util
         return false;
 #endif
     }
-} // namespace util
+
+    template <template <typename> typename Container = std::vector, typename Arg = std::string_view>
+    auto Split(std::string_view str, std::string_view delimiter)
+    {
+        Container<Arg> container;
+        auto           temp = str |
+                    std::ranges::views::split(delimiter) |
+                    std::ranges::views::transform(
+                        [](auto &&word)
+                        { return Arg(std::addressof(*word.begin()), std::ranges::distance(word)); });
+        auto iter = std::inserter(container, container.end());
+        std::ranges::for_each(temp, [&](auto &&word)
+                              { iter = {word.begin(), word.end()}; });
+        return container;
+    }
+} // namespace Util
