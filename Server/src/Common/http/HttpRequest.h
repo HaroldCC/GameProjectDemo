@@ -9,33 +9,13 @@
 #pragma once
 #include <map>
 #include <string_view>
+#include "boost/beast.hpp"
+
+namespace bHttp = boost::beast::http;
 
 namespace Http
 {
-    enum class WebStatus
-    {
-        Ok          = 200,
-        Auth        = 401,
-        Error       = 404,
-        InterError  = 500,
-        NoImplement = 501,
-        Timeout     = 503,
-    };
-
-    enum class HttpRequestType
-    {
-        Get     = 1 << 0,
-        Post    = 1 << 1,
-        Head    = 1 << 2,
-        Put     = 1 << 3,
-        Delete  = 1 << 4,
-        Options = 1 << 5,
-        Trace   = 1 << 6,
-        Connect = 1 << 7,
-        Patch   = 1 << 8,
-    };
-
-    class HttpRequest
+    class HttpRequest final
     {
     public:
         HttpRequest()                               = default;
@@ -45,14 +25,21 @@ namespace Http
         HttpRequest &operator=(const HttpRequest &) = default;
         ~HttpRequest()                              = default;
 
-    private:
-        WebStatus Parse(std::string_view content);
+        /**
+         * @brief 解析http请求内容
+         *
+         * @param content http请求内容
+         * @return bHttp::status 状态码
+         */
+        bHttp::status Parse(std::string_view content);
+
+        [[nodiscard]] std::string_view GetMethod() const;
+        [[nodiscard]] std::string_view GetPath() const;
+        [[nodiscard]] std::string_view GetVersion() const;
+        [[nodiscard]] std::string_view GetHeader(std::string_view headerType) const;
+        [[nodiscard]] std::string_view GetBody() const;
 
     private:
-        std::string_view _body;
-
-        std::map<std::string_view, std::string_view> _headers;
-        std::map<std::string_view, std::string_view> _querys;
-        std::map<std::string_view, std::string_view> _contents;
+        bHttp::request<bHttp::string_body> _request;
     };
 } // namespace Http

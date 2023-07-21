@@ -8,20 +8,41 @@
 ************************************************************************/
 #include "pch.h"
 #include "HttpSession.h"
+
+#include <utility>
 #include "MessageDef.pb.h"
 
-void HttpSession::ReadHandler()
+namespace Http
 {
-    net::MessageBuffer &packet = GetReadBuffer();
-    MessageDef::Message message;
-
-    while (packet.ReadableBytes() > 0)
+    void HttpSession::AddRouter(boost::beast::http::verb method, std::string_view path, HttpHandlerFunc handler)
     {
-        if (!message.SerializeToArray(packet.GetReadPointer(), (int)packet.ReadableBytes()))
+        _router.AddRouter(method, path, std::move(handler));
+    }
+
+    void HttpSession::ReadHandler()
+    {
+        net::MessageBuffer &packet = GetReadBuffer();
+        if (packet.ReadableBytes() <= 0)
         {
-            break;
+            return;
         }
 
-        const std::string &content = message.content();
+        if (auto message = BufferToProto<MessageDef::Message>(packet); message.has_value())
+        {
+            const std::string &content = message.value().content();
+            _req.Parse(content);
+            if (auto rep = _router.Handle(_req); rep.has_value())
+            {
+                _rep = rep.value();
+            }
+            else
+            {
+                _rep.SetStatusCode(status::not_found);
+                _rep.SetBody(std::format("Not Found {}", _req.GetPath()));
+            }
+        }
+
+        std::string_view response = _rep.GetPayload();
+        SendMessage(response.size(), response.data());
     }
-}
+} // namespace Http

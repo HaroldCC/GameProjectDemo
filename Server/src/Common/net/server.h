@@ -24,10 +24,10 @@ namespace net
 
         void Start();
 
-    private:
-        void DoAccept();
+    protected:
+        virtual void DoAccept() = 0;
 
-    private:
+    protected:
         std::thread             _netThread;
         asio::io_context       &_ioContext;
         asio::ip::tcp::acceptor _accepter;

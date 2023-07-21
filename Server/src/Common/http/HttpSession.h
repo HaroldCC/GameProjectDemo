@@ -9,9 +9,23 @@
 
 #pragma once
 #include "net/session.h"
+#include "HttpRequest.h"
+#include "HttpResponse.h"
+#include "HttpRouter.h"
 
-class HttpSession final : public net::ISession
+namespace Http
 {
-protected:
-    void ReadHandler() override;
-};
+    class HttpSession final : public net::ISession
+    {
+    public:
+        void AddRouter(boost::beast::http::verb method, std::string_view path, HttpHandlerFunc handler);
+
+    protected:
+        void ReadHandler() override;
+
+    private:
+        HttpRequest  _req;
+        HttpResponse _rep;
+        HttpRouter   _router;
+    };
+} // namespace Http

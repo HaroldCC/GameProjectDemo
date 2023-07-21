@@ -73,6 +73,33 @@ namespace net
     protected:
         virtual void ReadHandler() = 0;
 
+        template <typename Proto>
+        std::optional<Proto> BufferToProto(MessageBuffer &message)
+        {
+            Proto proto;
+            if (!proto.ParseFromArray(message.GetReadPointer(), (int)message.ReadableBytes()))
+            {
+                return std::nullopt;
+            }
+            message.ReadDone(message.ReadableBytes());
+
+            return proto;
+        }
+
+        template <typename Proto>
+        std::optional<MessageBuffer> ProtoToBuffer(const Proto &proto)
+        {
+            auto          size = proto.ByteSizeLong();
+            MessageBuffer message(size);
+            if (!proto.SerializeToArray(message.GetWritPointer(), (int)size))
+            {
+                return std::nullopt;
+            }
+            message.WriteDone(size);
+
+            return message;
+        }
+
         void AsyncRead();
 
         void AsyncWrite();

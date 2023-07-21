@@ -7,39 +7,65 @@
 > Created Time    : 2023年07月16日  20时48分08秒
 ************************************************************************/
 #include "pch.h"
-#include <ranges>
 #include "HttpRequest.h"
 #include "include/util.hpp"
+#include "Common/include/log.hpp"
 
 namespace Http
 {
-    WebStatus HttpRequest::Parse(std::string_view content)
+    /**
+     * @brief 解析http请求内容
+     *
+     * @param content http请求内容
+     * @return bHttp::status 状态码
+     */
+    bHttp::status HttpRequest::Parse(std::string_view content)
     {
         if (content.empty())
         {
-            return WebStatus::Error;
+            return bHttp::status::bad_request;
         }
 
-        auto splitted = content | std::views::split(' ') | std::views::transform([](auto word)
-                                                                                 { return std::string_view(word.begin(), word.end()); });
-#if defined(__cpp_lib_ranges_to_container)
-        std::vector<std::string_view> subStrings = content | std::ranges::views::lazy_split(' ') | std::ranges::to<std::vector<std::string_view>>;
-#else
-        auto &&subStrings = Util::Split(content, " ");
-#endif
+        // 创建请求解析，并设置立即解析
+        bHttp::request_parser<bHttp::string_body> requestParser;
+        requestParser.eager(true);
 
-        if (subStrings.empty())
+        boost::beast::error_code errcode;
+        requestParser.put(boost::asio::buffer(content), errcode);
+        if (errcode)
         {
-            return WebStatus::Error;
+            Log::error("Parser http request error:{}", errcode.message());
+            return bHttp::status::internal_server_error;
         }
 
-        // 请求方法
-        if (subStrings[0].empty())
-        {
-            return WebStatus::NoImplement;
-        }
-        _headers["method"] = subStrings[0];
+        _request = requestParser.release();
 
-        return WebStatus::Ok;
+        return bHttp::status::ok;
     }
+
+    [[nodiscard]] std::string_view HttpRequest::GetMethod() const
+    {
+        return _request.method_string();
+    }
+
+    [[nodiscard]] std::string_view HttpRequest::GetPath() const
+    {
+        return _request.target();
+    }
+
+    [[nodiscard]] std::string_view HttpRequest::GetVersion() const
+    {
+        return _request.version() == 11 ? "HTTP/1.1" : "HTTP/1.0";
+    }
+
+    [[nodiscard]] std::string_view HttpRequest::GetHeader(std::string_view headerType) const
+    {
+        return _request[headerType];
+    }
+
+    [[nodiscard]] std::string_view HttpRequest::GetBody() const
+    {
+        return _request.body();
+    }
+
 } // namespace Http

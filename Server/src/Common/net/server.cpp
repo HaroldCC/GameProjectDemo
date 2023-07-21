@@ -45,21 +45,21 @@ namespace net
             });
     }
 
-    void Server::DoAccept()
-    {
-        _accepter.async_accept(
-            [this](const std::error_code &errcode, asio::ip::tcp::socket socket)
-            {
-                if (errcode)
-                {
-                    Log::error("接受连接失败：{}", errcode.message());
-                    return;
-                }
+    // void Server::DoAccept()
+    // {
+    //     _accepter.async_accept(
+    //         [this](const std::error_code &errcode, asio::ip::tcp::socket socket)
+    //         {
+    //             if (errcode)
+    //             {
+    //                 Log::error("接受连接失败：{}", errcode.message());
+    //                 return;
+    //             }
 
-                auto pSession = std::make_shared<Session>(std::move(socket));
-                pSession->StartSession();
+    //             auto pSession = std::make_shared<Session>(std::move(socket));
+    //             pSession->StartSession();
 
-                DoAccept();
-            });
-    }
+    //             DoAccept();
+    //         });
+    // }
 } // namespace net
