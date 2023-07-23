@@ -6,6 +6,9 @@
 #include "asio.hpp"
 #include "Common/include/log.hpp"
 #include "Common/include/util.hpp"
+#include "boost/uuid/uuid.hpp"
+#include "boost/uuid/uuid_io.hpp"
+#include "boost/uuid/uuid_generators.hpp"
 #include "boost/beast.hpp"
 
 namespace http = boost::beast::http;
@@ -189,6 +192,9 @@ void TestHttpParser()
     }
 }
 
+#include <algorithm>
+#include <bit>
+
 class SessionIdGenerator
 {
 public:
@@ -201,21 +207,22 @@ public:
     uint64_t generateSessionId(const std::string &remoteIp)
     {
         // 获取当前时间戳，并转换为网络字节序
-        auto currentTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-                               std::chrono::system_clock::now().time_since_epoch())
-                               .count();
-        std::cout << "currentTime" << currentTime << std::endl;
-        uint64_t timestamp = htonll(currentTime);
+        auto     currentTime = std::chrono::system_clock::now().time_since_epoch();
+        uint64_t timestamp   = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime).count();
+        if (std::endian::native == std::endian::little)
+        {
+            timestamp = std::byteswap(timestamp);
+        }
 
         // 提取对端IP地址的每个字节作为会话ID的一部分
         asio::ip::address_v4::bytes_type bytes = asio::ip::address_v4::from_string(remoteIp).to_bytes();
 
         // 组合会话ID，高32位为时间戳，接着是对端IP地址的每个字节，最后是计数器部分
         uint64_t sessionId = (timestamp << 32) |
-                             (static_cast<uint64_t>(bytes[0]) << 24) |
-                             (static_cast<uint64_t>(bytes[1]) << 16) |
-                             (static_cast<uint64_t>(bytes[2]) << 8) |
-                             static_cast<uint64_t>(bytes[3]) |
+                             (static_cast<uint64_t>(bytes[3]) << 24) |
+                             (static_cast<uint64_t>(bytes[2]) << 16) |
+                             (static_cast<uint64_t>(bytes[1]) << 8) |
+                             static_cast<uint64_t>(bytes[0]) |
                              (counter_++);
 
         return sessionId;
@@ -224,15 +231,20 @@ public:
     // 反解析会话ID，提取对应的IP和时间戳
     bool parseSessionId(uint64_t sessionId, std::string &ip, uint64_t &timestamp)
     {
-        // 提取时间戳的高32位，并转换为主机字节序
-        timestamp = ntohll(sessionId) >> 32;
+        if (std::endian::native == std::endian::little)
+        {
+            sessionId = std::byteswap(sessionId);
+        }
+
+        // 提取时间戳的高32位
+        timestamp = (sessionId >> 32);
 
         // 提取对端IP地址的每个字节
         asio::ip::address_v4::bytes_type bytes;
-        bytes[0] = (sessionId >> 24) & 0xFF;
-        bytes[1] = (sessionId >> 16) & 0xFF;
-        bytes[2] = (sessionId >> 8) & 0xFF;
-        bytes[3] = sessionId & 0xFF;
+        bytes[3] = (sessionId >> 24) & 0xFF;
+        bytes[2] = (sessionId >> 16) & 0xFF;
+        bytes[1] = (sessionId >> 8) & 0xFF;
+        bytes[0] = sessionId & 0xFF;
 
         // 将对端IP地址的每个字节组合成IP地址
         ip = asio::ip::make_address_v4(bytes).to_string();
@@ -377,6 +389,9 @@ int main(int argc, char **argv)
     {
         std::cerr << "Failed to parse session ID." << std::endl;
     }
+
+    boost::uuids::uuid uid = boost::uuids::random_generator()();
+    boost::uuids::to_string(uid);
 
     return 0;
 }
