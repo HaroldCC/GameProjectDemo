@@ -22,7 +22,7 @@ target("Common")
 
 target("tests")
     set_kind("binary")
-    add_packages("spdlog", "doctest", "toml++", "asio", "protobuf-cpp", "boost", "boost", "openssl3")
+    add_packages("spdlog", "doctest", "toml++", "asio", "protobuf-cpp", "boost", "boost", "openssl3", "mysql")
     add_deps("Common")
     add_includedirs("src")
     add_headerfiles("src/tests/*.h")

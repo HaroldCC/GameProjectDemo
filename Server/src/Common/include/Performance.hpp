@@ -14,38 +14,41 @@
 
 class Timer
 {
-private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> _mStartTimePoint;
 
 public:
     Timer()
-        : _mStartTimePoint(std::chrono::high_resolution_clock::now())
     {
+        Reset();
     }
 
-    Timer(const Timer &)            = default;
-    Timer(Timer &&)                 = delete;
-    Timer &operator=(const Timer &) = default;
-    Timer &operator=(Timer &&)      = delete;
-    ~Timer()
+    void Reset()
     {
-        Stop();
+        _startTimePoint = std::chrono::high_resolution_clock::now();
     }
 
-    void Stop()
+    double ElapsedNanosec()
     {
-        auto endTimePoint = std::chrono::high_resolution_clock::now();
-
-        auto start = std::chrono::time_point_cast<std::chrono::microseconds>(_mStartTimePoint)
-                         .time_since_epoch()
-                         .count();
-        auto end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimePoint)
-                       .time_since_epoch()
-                       .count();
-
-        auto   duration    = end - start;
-        double miliseconds = (double)duration * 0.001;
-
-        std::cout << "**********" << duration << "us (" << miliseconds << "ms)\n";
+        auto currentTimePoint = std::chrono::high_resolution_clock::now();
+        return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(currentTimePoint - _startTimePoint)
+            .count();
     }
+
+    double ElapsedMicrosec()
+    {
+        return ElapsedNanosec() * 0.001;
+    }
+
+    double ElapsedMillisec()
+    {
+        return ElapsedMicrosec() * 0.001;
+    }
+
+    double ElapsedSec()
+    {
+        return ElapsedMillisec() * 0.001;
+    }
+
+private:
+    std::chrono::time_point<std::chrono::high_resolution_clock>
+        _startTimePoint;
 };

@@ -77,3 +77,104 @@ class NetworkThread~SocketType~{
 }
 SocketMgr~SocketType~ *-- NetworkThread~SocketType~
 ```
+
+# 数据库模块
+``` mermaid
+classDiagram
+class MySQLConnection{
+    <<abstract>>
+    + MySQLConnection(connInfo : MySqlConnectionInfo &);
+    + MySQLConnection(queue : ProducerConsumerQueue<SQLOperation*>*, connInfo : MySQLConnection&);
+    # void DoPrepareStatements()*;
+}
+
+class LoginDatabaseConnection{
+    # void DoPrepareStatements();
+}
+
+class CharacterDatabaseConnection{
+    # void DoPrepareStatements();
+}
+
+class WorldDatabaseConnection{
+    # void DoPrepareStatements();
+}
+
+MySQLConnection <|-- LoginDatabaseConnection
+MySQLConnection <|-- CharacterDatabaseConnection
+MySQLConnection <|-- WorldDatabaseConnection
+
+class SQLOperation{
+    + bool Execute()*;
+}
+
+class PingOperation{
+    - bool Execute();
+}
+
+class SQLQueryHolderTask{
+    + bool Execute();
+}
+
+class BasicStatementTask{
+    + bool Execute();
+}
+
+class TransactionTask{
+    # bool Execute();
+}
+
+class TransactionWithResultTask{
+    # bool Execute();
+}
+
+class PreparedStatementTask{
+    + bool Execute();
+}
+
+SQLOperation <|-- PingOperation
+SQLOperation <|-- SQLQueryHolderTask
+SQLOperation <|-- BasicStatementTask
+SQLOperation <|-- TransactionTask
+TransactionTask <|-- TransactionWithResultTask
+SQLOperation <|-- PreparedStatementTask
+
+SQLOperation "1" --> "1" MySQLConnection : contains
+
+class SQLQueryHolderBase
+
+class SQLQueryHolder~T~
+
+SQLQueryHolderBase <|-- SQLQueryHolder
+SQLQueryHolderTask "1" --> "1" SQLQueryHolderBase : uses
+
+class DatabaseWorker{
+    + DatabaseWorker(newQueue : ProducerConsumerQueue<SQLOperation*>*, connection : MySQLConnection);
+    - _workerThread : thread
+}
+
+class DatabaseWorkerPool~T~{
+    - uint32_t OpenConnections(type : enum, numConnections : uint8_t);
+}
+
+
+class ProducerConsumerQueue~T~
+
+
+DatabaseWorker "1" --> "1" ProducerConsumerQueue~T~ : uses
+ProducerConsumerQueue "1" --> "*" SQLOperation : uses
+
+DatabaseWorkerPool "1" --> "*" ProducerConsumerQueue : contains
+
+class DatabaseLoader{
+    + DatabaseLoader& AddDatabase~T~(pool : DatabaseWorkerPool, name : string);
+    + void Load();
+    - _open     : queue
+    - _populate : queue
+    - _update   : queue
+    - _prepare  : queue
+}
+```
+
+# 测试
+@import "TrinityCore_database.plantuml"

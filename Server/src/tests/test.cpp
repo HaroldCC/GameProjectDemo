@@ -10,6 +10,7 @@
 #include "boost/uuid/uuid_io.hpp"
 #include "boost/uuid/uuid_generators.hpp"
 #include "boost/beast.hpp"
+#include "mysql.h"
 
 namespace http = boost::beast::http;
 
@@ -192,69 +193,13 @@ void TestHttpParser()
     }
 }
 
-#include <algorithm>
-#include <bit>
-
-class SessionIdGenerator
+void testMysql()
 {
-public:
-    SessionIdGenerator()
-        : counter_(0)
-    {
-    }
-
-    // 生成唯一的会话ID
-    uint64_t generateSessionId(const std::string &remoteIp)
-    {
-        // 获取当前时间戳，并转换为网络字节序
-        auto     currentTime = std::chrono::system_clock::now().time_since_epoch();
-        uint64_t timestamp   = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime).count();
-        if (std::endian::native == std::endian::little)
-        {
-            timestamp = std::byteswap(timestamp);
-        }
-
-        // 提取对端IP地址的每个字节作为会话ID的一部分
-        asio::ip::address_v4::bytes_type bytes = asio::ip::address_v4::from_string(remoteIp).to_bytes();
-
-        // 组合会话ID，高32位为时间戳，接着是对端IP地址的每个字节，最后是计数器部分
-        uint64_t sessionId = (timestamp << 32) |
-                             (static_cast<uint64_t>(bytes[3]) << 24) |
-                             (static_cast<uint64_t>(bytes[2]) << 16) |
-                             (static_cast<uint64_t>(bytes[1]) << 8) |
-                             static_cast<uint64_t>(bytes[0]) |
-                             (counter_++);
-
-        return sessionId;
-    }
-
-    // 反解析会话ID，提取对应的IP和时间戳
-    bool parseSessionId(uint64_t sessionId, std::string &ip, uint64_t &timestamp)
-    {
-        if (std::endian::native == std::endian::little)
-        {
-            sessionId = std::byteswap(sessionId);
-        }
-
-        // 提取时间戳的高32位
-        timestamp = (sessionId >> 32);
-
-        // 提取对端IP地址的每个字节
-        asio::ip::address_v4::bytes_type bytes;
-        bytes[3] = (sessionId >> 24) & 0xFF;
-        bytes[2] = (sessionId >> 16) & 0xFF;
-        bytes[1] = (sessionId >> 8) & 0xFF;
-        bytes[0] = sessionId & 0xFF;
-
-        // 将对端IP地址的每个字节组合成IP地址
-        ip = asio::ip::make_address_v4(bytes).to_string();
-
-        return true;
-    }
-
-private:
-    uint64_t counter_;
-};
+    mysql_library_init(0, nullptr, nullptr);
+    MYSQL *mysql = mysql_init(nullptr);
+    auto   p     = mysql_real_connect(mysql, "127.0.0.1", "root", "cr11234", "test", 3306, nullptr, 0);
+    int    i     = 1;
+}
 
 int main(int argc, char **argv)
 {
@@ -301,12 +246,12 @@ int main(int argc, char **argv)
         Log::error("{}\n", i);
     }
 
-    std::string_view              content("This is a string_view !");
-    std::vector<std::string_view> subStrings = Util::Split(content, " ");
-    for (auto &&item : subStrings)
-    {
-        Log::debug("item:{}", item);
-    }
+    std::string_view content("This is a string_view !");
+    // std::vector<std::string_view> subStrings = Util::Split(content, " ");
+    // for (auto &&item : subStrings)
+    // {
+    //     Log::debug("item:{}", item);
+    // }
 
     Log::debug("---------------------http test---------------------------");
     // TestBoostBeastHttpParser();
@@ -344,7 +289,7 @@ int main(int argc, char **argv)
             std::string strKey = str1 + std::to_string(i);
             map[strKey]        = i;
         }
-        Log::debug("tesMapJoinKey map.size() = {}", map.size());
+        Log::debug("tesMapJoinKey map.size() = {}, {}, {}, {}", map.size(), timer.ElapsedNanosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
     };
 
     auto testMapMap = []()
@@ -357,41 +302,19 @@ int main(int argc, char **argv)
             con[std::to_string(i).data()] = i;
         }
 
-        Log::debug("testMapMap map.size() = {}", map.size());
+        Log::debug("testMapMap map.size() = {}, {}, {}, {}", map.size(), timer.ElapsedNanosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
     };
 
     testMapJoinKey();
     testMapMap();
 
     Log::debug("-----------------------test base64-------------");
-    // 假设这里有一个对端IP地址
-    std::string remoteIp = "192.168.1.100";
 
-    // 创建一个会话ID生成器
-    SessionIdGenerator sessionIdGenerator;
+    testMysql();
 
-    // 生成会话ID
-    uint64_t sessionId = sessionIdGenerator.generateSessionId(remoteIp);
-
-    std::cout << "Generated Session ID: " << sessionId << std::endl;
-
-    // 解析会话ID，提取出对应的IP和时间戳
-    std::string parsedIp;
-    uint64_t    parsedTimestamp;
-    if (sessionIdGenerator.parseSessionId(sessionId, parsedIp, parsedTimestamp))
-    {
-        std::cout << "Parsed IP: " << parsedIp << std::endl;
-        std::cout << "Parsed Timestamp: " << parsedTimestamp << std::endl;
-
-        // 这里可以根据需要使用解析出的IP和时间戳进行后续操作
-    }
-    else
-    {
-        std::cerr << "Failed to parse session ID." << std::endl;
-    }
-
-    boost::uuids::uuid uid = boost::uuids::random_generator()();
-    boost::uuids::to_string(uid);
+    Timer timer;
+    std::this_thread::sleep_for(2s);
+    Log::debug("micro:{}, milisec:{}, sec:{}", timer.ElapsedMicrosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
 
     return 0;
 }

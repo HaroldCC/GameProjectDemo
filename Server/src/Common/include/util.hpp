@@ -74,18 +74,4 @@ namespace Util
 #endif
     }
 
-    template <template <typename> typename Container = std::vector, typename Arg = std::string_view>
-    auto Split(std::string_view str, std::string_view delimiter)
-    {
-        Container<Arg> container;
-        auto           temp = str |
-                    std::ranges::views::split(delimiter) |
-                    std::ranges::views::transform(
-                        [](auto &&word)
-                        { return Arg(std::addressof(*word.begin()), std::ranges::distance(word)); });
-        auto iter = std::inserter(container, container.end());
-        std::ranges::for_each(temp, [&](auto &&word)
-                              { iter = {word.begin(), word.end()}; });
-        return container;
-    }
 } // namespace Util

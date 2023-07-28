@@ -1,0 +1,147 @@
+@startuml database
+abstract class MySQLConnection
+{
+    + MySQLConnection(connInfo : MySqlConnectionInfo &);
+    + MySQLConnection(queue : ProducerConsumerQueue<SQLOperation*>*, connInfo : MySQLConnection&);
+    # {abstract}void DoPrepareStatements();
+}
+
+class LoginDatabaseConnection
+{
+    # void DoPrepareStatements();
+}
+
+class CharacterDatabaseConnection
+{
+    # void DoPrepareStatements();
+}
+
+class WorldDatabaseConnection
+{
+    # void DoPrepareStatements();
+}
+
+MySQLConnection <|-- LoginDatabaseConnection
+MySQLConnection <|-- CharacterDatabaseConnection
+MySQLConnection <|-- WorldDatabaseConnection
+
+abstract class SQLOperation
+{
+    + {abstract} bool Execute();
+}
+
+class PingOperation
+{
+    - bool Execute();
+}
+
+class SQLQueryHolderTask
+{
+    + bool Execute();
+}
+
+class BasicStatementTask
+{
+    + bool Execute();
+}
+
+class TransactionTask
+{
+    # bool Execute();
+}
+
+class TransactionWithResultTask
+{
+    # bool Execute();
+}
+
+class PreparedStatementTask
+{
+    + bool Execute();
+}
+
+SQLOperation <|-- PingOperation
+SQLOperation <|-- SQLQueryHolderTask
+SQLOperation <|-- BasicStatementTask
+SQLOperation <|-- TransactionTask
+TransactionTask <|-- TransactionWithResultTask
+SQLOperation <|-- PreparedStatementTask
+
+SQLOperation --> "1" MySQLConnection : uses
+
+class SQLQueryHolderBase
+{
+
+}
+
+class SQLQueryHolder<<template>>
+{
+
+}
+
+SQLQueryHolderBase <|-- SQLQueryHolder
+SQLQueryHolderTask --> "1" SQLQueryHolderBase : uses
+
+class DatabaseWorder
+{
+    + DatabaseWorder(newQueue : ProducerConsumerQueue<SQLOperation*>*, connection : MySQLConnection);
+    - _workerThread : thread
+}
+
+class DatabaseWorkerPool<<T>>
+{
+    .. 异步方法 ..
+    + TransactionCallBack AsyncCommitTransaction(transaction : SQLOperation<T>);
+    + QueryResult AsyncQuery(sql : const char*, connection : T*);
+    + void CommitTransaction(transaction : SQLTransaction<T>); 
+
+    __ 同步方法 __
+    + void DirectCommitTransaction(transaction : SQLOperation<T>)
+    + QueryResult Query(sql : const char*, conn : T*);
+
+    -- 创建连接 --
+    - uint32_t OpenConnections(type : enum, numConnections : uint8_t);
+    - {field} _queue : unique_ptr<ProducerConsumerQueue<SQLOperation*>>
+}
+
+note left of DatabaseWorkerPool::CommitTransaction
+    提交事务，这里用的是异步提交，没有返回值
+end note
+
+note left of DatabaseWorkerPool::OpenConnections
+    根据传入的type创建同步的或者异步的数据库连接
+end note
+
+class common.Threading.ProducerConsumerQueue<<template>>
+{
+
+}
+
+
+DatabaseWorder --> "1" common.Threading.ProducerConsumerQueue : uses
+common.Threading.ProducerConsumerQueue --> "*" SQLOperation : uses
+
+DatabaseWorkerPool --> "*" common.Threading.ProducerConsumerQueue : contains
+
+class DatabaseLoader
+{
+    + DatabaseLoader& AddDatabase<<template>>(pool : DatabaseWorkerPool, name : string);
+    + void Load();
+    - {field} _open     : queue
+    - {field} _populate : queue
+    - {field} _update   : queue
+    - {field} _prepare  : queue
+}
+
+@enduml
+
+@startuml 数据库创建
+创建数据库StartDB -> DatabaseLoader : 创建数据库连接池
+
+DatabaseLoader -> DatabaseWorkPool : AddDatabase添加对应的连接池（LoginDatabaseConnection、CharacterDatabaseConnection、WorldDatabaseConnection）
+
+DatabaseWorkPool -> MySQLConnection : 持有连接，进行Query等一系列操作
+DatabaseWorkPool -> SQLOperation : 根据内部接口创建操作，异步操作直接添加到队列
+DatabaseWorkPool -> DatabaseWorker : 创建连接时，直接将队列交给worker并创建线程，worker内部线程操作由DatabaseWorkPool中添加的SQLOperation
+
+@enduml
