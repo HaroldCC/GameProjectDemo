@@ -15,7 +15,12 @@ class MySqlConnection;
 class DatabaseWorker
 {
 public:
-    DatabaseWorker(ProducerConsumerQueue<SQLOperation *> *_queue, MySqlConnection *sqlConn);
+    DatabaseWorker(ProducerConsumerQueue<SQLOperation *> *queue, MySqlConnection *sqlConn);
+    ~DatabaseWorker();
+    DatabaseWorker(const DatabaseWorker &)            = delete;
+    DatabaseWorker(DatabaseWorker &&)                 = delete;
+    DatabaseWorker &operator=(const DatabaseWorker &) = delete;
+    DatabaseWorker &operator=(DatabaseWorker &&)      = delete;
 
 private:
     void WorkThread();

@@ -11,6 +11,7 @@
 #include "Common/include/Log.hpp"
 #include "Common/include/Performance.hpp"
 #include "mysqld_error.h"
+#include "DatabaseWorker.h"
 
 using namespace std::literals::chrono_literals;
 
@@ -32,7 +33,7 @@ MySqlConnection::MySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, c
       _connectType(ConnectionType::ASYNC),
       _queue(queue)
 {
-    _worker = std::make_unique<DatabaseWorker>();
+    _worker = std::make_unique<DatabaseWorker>(queue, this);
 }
 
 /**

@@ -20,6 +20,16 @@ function ExterRule()
     set_targetdir("../Bin/$(plat)-$(arch)-$(mode)")
 end
 
+----------------------------------------------------------
+--- @brief Ìí¼ÓProfiler
+----------------------------------------------------------
+function AddTraceProfiler() 
+    -- if is_mode("debug") then
+    --     add_files("$(projectdir)/tools/profiler/tracy/public/TracyClient.cpp")
+    --     add_defines("TRACY_ENABLE")
+    -- end
+end
+
 add_rules("mode.release", "mode.debug")
 add_rules("plugin.vsxmake.autoupdate")
 

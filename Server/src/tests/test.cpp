@@ -11,6 +11,7 @@
 #include "boost/uuid/uuid_generators.hpp"
 #include "boost/beast.hpp"
 #include "mysql.h"
+#include "Common/threading/ProducerConsumerQueue.hpp"
 
 namespace http = boost::beast::http;
 
@@ -315,6 +316,134 @@ int main(int argc, char **argv)
     Timer timer;
     std::this_thread::sleep_for(2s);
     Log::debug("micro:{}, milisec:{}, sec:{}", timer.ElapsedMicrosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
+
+    Log::debug("---------------------------test ProducerConsumerQueue-------------------");
+    ProducerConsumerQueue<int *> queueIntPointer;
+    // std::thread                  tProducer([&]()
+    //                       {
+    //     for (int i = 0; i < 10; ++i)
+    //{
+    //     queueIntPointer.Push(&i);
+    // }
+    //     });
+
+    for (int i = 0; i < 10; ++i)
+    {
+        int *tmp = new int(i);
+        Log::debug("push {} {:p})", *tmp, (void *)tmp);
+        // std::cout << std::format("push {}:{:p}", i, (void *)&i);
+        queueIntPointer.Push(tmp);
+    }
+
+    std::thread tConsumer([&]()
+                          {
+                            while(!queueIntPointer.Empty())
+                                {
+                            auto intPointer = queueIntPointer.WaitAndPop() ;
+                            if (nullptr != intPointer)
+                            {
+                                // std::cout << *intPointer << std::endl;
+                                Log::debug("pop:{}", *intPointer);
+                            } } });
+
+    ProducerConsumerQueue<int> queueInt;
+    // std::thread                tIntProducer([&]()
+    //                          {
+    //                           for (int i = 0; i < 13; ++i)
+    //                           {
+    //                               queueInt.Push(i);
+    //                           }
+    //     });
+
+    for (int i = 0; i < 13; ++i)
+    {
+        queueInt.Push(i);
+    }
+
+    std::thread tIntCustomer([&]()
+                             {
+            while(!queueInt.Empty())
+        {
+                auto i = queueInt.WaitAndPop();
+                                 Log::debug("i:{}", i); } });
+
+    // tProducer.join();
+    tConsumer.join();
+    // tIntProducer.join();
+    tIntCustomer.join();
+
+    Log::debug("-------------------------------unique_ptr---------------------");
+    struct A
+    {
+        A()
+        {
+            Log::debug("A::A");
+        }
+
+        A &operator=(A &&)
+        {
+            Log::debug("A::OpMtor");
+        }
+        A(const A &)
+        {
+            Log::debug("A::Ctor");
+        }
+
+        A(A &&)
+        {
+            Log::debug("A::Mtor");
+        }
+
+        A &operator=(const A &)
+        {
+            Log::debug("A::opCtor");
+        }
+
+        virtual ~A()
+        {
+            Log::debug("A::~A");
+        }
+    };
+
+    struct B : public A
+    {
+        B()
+        {
+            Log::debug("B::B");
+        }
+
+        B(const B &)
+        {
+            Log::debug("B::Ctor");
+        }
+
+        B(B &&)
+        {
+            Log::debug("B::Mtor");
+        }
+
+        B &operator=(const B &)
+        {
+            Log::debug("B::OpCtor");
+        }
+
+        B &operator=(B &&)
+        {
+            Log::debug("B::OpMtor");
+        }
+
+        virtual ~B()
+        {
+            Log::debug("B::~B");
+        }
+    };
+
+    A *pB = new B;
+    // B               pTmpB = *dynamic_cast<B *>(pB);
+    std::queue<A *> queueA;
+    queueA.push(pB);
+    std::unique_ptr<A> pSB(queueA.front());
+    queueA.pop();
 
     return 0;
 }

@@ -98,7 +98,27 @@ public:
         _queue.pop();
     }
 
-    void Cancel()
+    T WaitAndPop()
+    {
+        std::unique_lock<std::mutex> lock(_queueLock);
+        T                            value{};
+
+        _condition.wait(lock, [this]() -> bool
+                        { return !_queue.empty() && !_shutdown; });
+        // while (_queue.empty() && !_shutdown)
+        //     _condition.wait(lock);
+
+        if (_queue.empty() || _shutdown)
+        {
+            return value;
+        }
+
+        value = _queue.front();
+        _queue.pop();
+        return value;
+    }
+
+    void Clear()
     {
         std::unique_lock<std::mutex> lock(_queueLock);
 
