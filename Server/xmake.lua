@@ -3,6 +3,7 @@ add_requires("spdlog", "doctest", "toml++",
             "boost", "openssl3", "mysql")
 
 target("Common")
+    add_rules("Debug")
     set_kind("static")
     add_packages("spdlog", "doctest", "toml++",
                  "asio", "protobuf-cpp", "nlohmann_json", 
@@ -18,17 +19,16 @@ target("Common")
     add_files("src/Common/net/MessageProto/**.proto", 
                 "src/Common/net/*.cpp", 
                 "src/Common/http/*.cpp")
-    ExterRule()
+                -- set_suffixname("_d")
 
 target("tests")
+    add_rules("Debug", "Profiler")
     set_kind("binary")
     add_packages("spdlog", "doctest", "toml++", "asio", "protobuf-cpp", "boost", "boost", "openssl3", "mysql")
     add_deps("Common")
     add_includedirs("src")
     add_headerfiles("src/tests/*.h")
     add_files("src/tests/*.cpp|ServerDemo.cpp|ClientDemo.cpp")
-    AddTraceProfiler()
-    ExterRule()
     after_build(function (target) 
         os.cp("$(curdir)/conf/", target:targetdir())
     end)

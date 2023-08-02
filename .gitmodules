@@ -1,0 +1,3 @@
+[submodule "tools/profiler/tracy"]
+	path = tools/profiler/tracy
+	url = https://github.com/HaroldCC/tracy.git
