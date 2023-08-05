@@ -133,6 +133,24 @@ class DatabaseLoader
     - {field} _prepare  : queue
 }
 
+class PreparedStatementBase
+{
+
+}
+
+class PreparedStatementData
+{
+
+}
+
+class PrepareStatement<<T>>
+{
+
+}
+
+PreparedStatementBase <|-- PrepareStatement
+PreparedStatementBase --> "*" PreparedStatementData : contains
+
 @enduml
 
 @startuml 数据库创建
