@@ -8,10 +8,14 @@
 ************************************************************************/
 #pragma once
 #include "MysqlTypeDef.h"
+#include <vector>
 
 class ResultSet
 {
 public:
+    ResultSet(ResultSet &&)            = delete;
+    ResultSet &operator=(ResultSet &&) = delete;
+
     ResultSet(MySqlResult *result, MySqlField *fields, uint64_t rowCount, uint32_t fieldCount);
     ~ResultSet();
 
@@ -25,17 +29,18 @@ public:
         return _fieldCount;
     }
 
-    // Field *Fetch() const
-    // {
-    //     return _currentRow;
-    // }
-    // Field const &operator[](std::size_t index) const;
+    Field *Fetch() const
+    {
+        return _currentRow;
+    }
+
+    Field const &operator[](std::size_t index) const;
 
 protected:
-    // std::vector<QueryResultFieldMetadata> _fieldMetadata;
-    // uint64                                _rowCount;
-    // Field                                *_currentRow;
-    // uint32                                _fieldCount;
+    std::vector<QueryResultFieldMetadata> _fieldMetadata;
+    uint_t64                              _rowCount;
+    Field                                *_currentRow;
+    uint32                                _fieldCount;
 
 private:
     void         CleanUp();

@@ -55,7 +55,7 @@ CheckOptions:
     value: CamelCase
   - key: readability-identifier-naming.GlobalConstantCase
     value: UPPER_CASE
-  - key: readability-identifier-naming.MemberPrefix
+  - key: readability-identifier-naming.ClassMemberPrefix
     value: _
   - key: readability-identifier-naming.MemberCase
     value: camelBack

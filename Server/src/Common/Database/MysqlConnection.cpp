@@ -125,6 +125,16 @@ bool MySqlConnection::Execute(std::string_view sql)
     return true;
 }
 
+bool MySqlConnection::TryLock()
+{
+    return _mutex.try_lock();
+}
+
+void MySqlConnection::UnLock()
+{
+    _mutex.unlock();
+}
+
 bool MySqlConnection::HandleMysqlErrcode(uint32_t errcode, uint8_t tryReconnectTimes /* = 5 */)
 {
     switch (errcode)

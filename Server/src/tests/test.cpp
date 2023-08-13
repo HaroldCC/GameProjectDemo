@@ -202,6 +202,13 @@ void testMysql()
     int    i     = 1;
 }
 
+enum class EType : uint32_t
+{
+    one,
+    two,
+    three,
+};
+
 int main(int argc, char **argv)
 {
     // 读取日志配置
@@ -444,6 +451,8 @@ int main(int argc, char **argv)
     queueA.push(pB);
     std::unique_ptr<A> pSB(queueA.front());
     queueA.pop();
+
+    Log::debug("--------------------------------测试enum class 自动转换------------------------");
 
     return 0;
 }

@@ -48,18 +48,38 @@ struct PrepareStatementData
     }
 };
 
-class PrepareStatementBase
+class PreparedStatementBase
 {
 public:
-    PrepareStatementBase(uint32_t paramIndex, uint8_t dataCapacity);
-    ~PrepareStatementBase() = default;
+    PreparedStatementBase(uint32_t preparedStatementIndex, uint8_t dataCapacity);
+    ~PreparedStatementBase() = default;
 
-    PrepareStatementBase(const PrepareStatementBase &)            = delete;
-    PrepareStatementBase(PrepareStatementBase &&)                 = delete;
-    PrepareStatementBase &operator=(const PrepareStatementBase &) = delete;
-    PrepareStatementBase &operator=(PrepareStatementBase &&)      = delete;
+    PreparedStatementBase(const PreparedStatementBase &)            = delete;
+    PreparedStatementBase(PreparedStatementBase &&)                 = delete;
+    PreparedStatementBase &operator=(const PreparedStatementBase &) = delete;
+    PreparedStatementBase &operator=(PreparedStatementBase &&)      = delete;
+
+    template <typename ValueType>
+    void SetValue(const uint8_t &index, const ValueType &value);
+
+    [[nodiscard]] uint32_t GetIndex() const
+    {
+        return _preparedStatementIndex;
+    }
+
+    [[nodiscard]] const std::vector<PrepareStatementData> &GetParameters() const
+    {
+        return _statementData;
+    }
 
 private:
-    uint32_t                          _paramIndex;
+    uint32_t                          _preparedStatementIndex; // 预处理语句索引
     std::vector<PrepareStatementData> _statementData;
+};
+
+template <typename ConnectionType>
+class PreparedStatement : public PreparedStatementBase
+{
+public:
+    using PreparedStatementBase::PreparedStatementBase;
 };

@@ -9,7 +9,14 @@
 #include "pch.h"
 #include "PreparedStatement.h"
 
-PrepareStatementBase::PrepareStatementBase(uint32_t prepareStatementIndex, uint8_t capacity)
-    : _prepareStatementIndex(prepareStatementIndex), _statementData(capacity)
+PreparedStatementBase::PreparedStatementBase(uint32_t preparedStatementIndex, uint8_t capacity)
+    : _preparedStatementIndex(preparedStatementIndex), _statementData(capacity)
 {
+}
+
+template <typename ValueType>
+void PreparedStatementBase::SetValue(const uint8_t &index, const ValueType &value)
+{
+    assert(index < _statementData.size());
+    _statementData[index]._data = value;
 }

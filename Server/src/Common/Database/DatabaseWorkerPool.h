@@ -7,6 +7,11 @@
 > Created Time    : 2023年08月03日  15时27分43秒
 ************************************************************************/
 #pragma once
+#include <cstdint>
+#include <string_view>
+
+template <typename ConnectionType>
+class PreparedStatement;
 
 template <typename ConnectionType>
 class DatabaseWorkerPool
@@ -26,8 +31,10 @@ public:
     bool PrepareStatements();
 
     void AsyncExecute(std::string_view sql);
+    void AsyncExecute(PreparedStatement<ConnectionType> *stmt);
 
-    void AsyncExecute(Prep);
+    void SyncExecute(std::string_view sql);
+    void SyncExecute(PreparedStatement<ConnectionType> *stmt);
 
 private:
 };
