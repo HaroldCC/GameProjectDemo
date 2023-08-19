@@ -9,82 +9,90 @@
 #pragma once
 #include "MysqlTypeDef.h"
 #include <vector>
+#include "Field.h"
 
 class ResultSet
 {
 public:
     ResultSet(ResultSet &&)            = delete;
     ResultSet &operator=(ResultSet &&) = delete;
+    ResultSet(const ResultSet &)       = delete;
+    ResultSet &operator=(ResultSet &)  = delete;
 
-    ResultSet(MySqlResult *result, MySqlField *fields, uint64_t rowCount, uint32_t fieldCount);
+    ResultSet(MySqlResult *pResult, MySqlField *pFields, uint64_t rowCount, uint32_t fieldCount);
     ~ResultSet();
 
-    bool     NextRow();
-    uint64_t GetRowCount() const
+    bool NextRow();
+
+    [[nodiscard]] uint64_t GetRowCount() const
     {
         return _rowCount;
     }
-    uint32_t GetFieldCount() const
+
+    [[nodiscard]] uint32_t GetFieldCount() const
     {
         return _fieldCount;
     }
 
-    Field *Fetch() const
+    [[nodiscard]] Field *Fetch() const
     {
-        return _currentRow;
+        return _pCurrentRow;
     }
 
-    Field const &operator[](std::size_t index) const;
-
-protected:
-    std::vector<QueryResultFieldMetadata> _fieldMetadata;
-    uint_t64                              _rowCount;
-    Field                                *_currentRow;
-    uint32                                _fieldCount;
+    const Field &operator[](std::size_t index) const;
 
 private:
-    void         CleanUp();
-    MySqlResult *_result;
-    MySqlField  *_fields;
+    void CleanUp();
 
-    ResultSet(ResultSet const &right)            = delete;
-    ResultSet &operator=(ResultSet const &right) = delete;
+private:
+    std::vector<QueryResultFieldMetadata> _fieldMetadata;
+    uint64_t                              _rowCount;
+    Field                                *_pCurrentRow;
+    uint32_t                              _fieldCount;
+
+    MySqlResult *_pResult;
+    MySqlField  *_pFields;
 };
 
 class PreparedResultSet
 {
 public:
-    PreparedResultSet(MySQLStmt *stmt, MySqlResult *result, uint64 rowCount, uint32 fieldCount);
+    PreparedResultSet(MySqlStmt *pStmt, MySqlResult *pResult, uint64_t rowCount, uint32_t fieldCount);
     ~PreparedResultSet();
-
-    bool   NextRow();
-    uint64 GetRowCount() const
-    {
-        return m_rowCount;
-    }
-    uint32 GetFieldCount() const
-    {
-        return m_fieldCount;
-    }
-
-    Field       *Fetch() const;
-    Field const &operator[](std::size_t index) const;
-
-protected:
-    std::vector<QueryResultFieldMetadata> m_fieldMetadata;
-    std::vector<Field>                    m_rows;
-    uint64                                m_rowCount;
-    uint64                                m_rowPosition;
-    uint32                                m_fieldCount;
-
-private:
-    MySQLBind   *m_rBind;
-    MySQLStmt   *m_stmt;
-    MySqlResult *m_metadataResult; ///< Field metadata, returned by mysql_stmt_result_metadata
-
-    void CleanUp();
-    bool _NextRow();
 
     PreparedResultSet(PreparedResultSet const &right)            = delete;
     PreparedResultSet &operator=(PreparedResultSet const &right) = delete;
+    PreparedResultSet(PreparedResultSet &&)                      = delete;
+    PreparedResultSet &operator=(PreparedResultSet &&)           = delete;
+
+    bool NextRow();
+
+    [[nodiscard]] uint64_t GetRowCount() const
+    {
+        return _rowCount;
+    }
+
+    [[nodiscard]] uint32_t GetFieldCount() const
+    {
+        return _fieldCount;
+    }
+
+    [[nodiscard]] Field *Fetch() const;
+
+    Field const &operator[](std::size_t index) const;
+
+private:
+    void CleanUp();
+    bool FetchNextRow();
+
+private:
+    std::vector<QueryResultFieldMetadata> _fieldMetadata;
+    std::vector<Field>                    _rows;
+    uint64_t                              _rowCount;
+    uint64_t                              _rowPosition;
+    uint32_t                              _fieldCount;
+
+    MySqlBind   *_pBind;
+    MySqlStmt   *_pStmt;
+    MySqlResult *_pMetadataResult; ///< Field metadata, returned by mysql_stmt_result_metadata
 };

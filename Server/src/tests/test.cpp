@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <string>
 #include <string_view>
+#include <source_location>
 #include "spdlog/spdlog.h"
 #include "toml++/toml.h"
 #include "asio.hpp"
@@ -12,6 +13,7 @@
 #include "boost/beast.hpp"
 #include "mysql.h"
 #include "Common/threading/ProducerConsumerQueue.hpp"
+#include "Common/include/Assert.h"
 
 namespace http = boost::beast::http;
 
@@ -453,6 +455,10 @@ int main(int argc, char **argv)
     queueA.pop();
 
     Log::debug("--------------------------------测试enum class 自动转换------------------------");
+
+    // Test();
+
+    Log::debug("这是一个测试{}, {}, {}, {}", "hello world", "你好", 12, 3.14);
 
     return 0;
 }

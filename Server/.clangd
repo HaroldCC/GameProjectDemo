@@ -1,7 +1,11 @@
 CompileFlags:
   # Treat code as C++, use C++17 standard, enable more warnings.
   Add:
-    [-D__cpp_consteval=201811, -D__cpp_lib_ranges_to_container=202202]
+    [
+      -std=c++20,
+      -D__cpp_consteval=201811,
+      -D__cpp_lib_ranges_to_container=202202,
+    ]
     #-include=/headers/file.h, -I/other/headers]
   # Remove extra warnings specified in compile commands.
   # Single value is also acceptable, same as Remove: [-mabi]

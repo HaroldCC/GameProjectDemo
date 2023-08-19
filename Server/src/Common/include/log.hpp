@@ -15,39 +15,49 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-// class SourceLocation
-//{
-// public:
-//     constexpr SourceLocation(const char *fileName = __builtin_FILE(), const char *funcName = __builtin_FUNCTION(),
-//                              std::uint32_t lineNum = __builtin_LINE()) noexcept
-//         : _fileName(fileName), _funcName(funcName), _lineNum(lineNum)
-//     {
-//     }
-//
-//     [[nodiscard]] constexpr const char *FileName() const noexcept
-//     {
-//         return _fileName;
-//     }
-//
-//     [[nodiscard]] constexpr const char *FuncName() const noexcept
-//     {
-//         return _funcName;
-//     }
-//
-//     [[nodiscard]] constexpr std::uint32_t LineNum() const noexcept
-//     {
-//         return _lineNum;
-//     }
-//
-// private:
-//     const char         *_fileName;
-//     const char         *_funcName;
-//     const std::uint32_t _lineNum;
-// };
+class SourceLocation
+{
+public:
+    constexpr SourceLocation(const char *fileName = __builtin_FILE(), const char *funcName = __builtin_FUNCTION(),
+                             std::uint32_t lineNum = __builtin_LINE()) noexcept
+        : _fileName(fileName), _funcName(funcName), _lineNum(lineNum)
+    {
+    }
 
-inline constexpr auto GetLogSourceLocation(const std::source_location &location)
+    [[nodiscard]] constexpr const char *FileName() const noexcept
+    {
+        return _fileName;
+    }
+
+    [[nodiscard]] constexpr const char *FuncName() const noexcept
+    {
+        return _funcName;
+    }
+
+    [[nodiscard]] constexpr std::uint32_t LineNum() const noexcept
+    {
+        return _lineNum;
+    }
+
+private:
+    const char         *_fileName;
+    const char         *_funcName;
+    const std::uint32_t _lineNum;
+};
+
+inline constexpr auto GetLogSourceLocation(SourceLocation location)
+{
+    return spdlog::source_loc{location.FileName(), static_cast<int>(location.LineNum()), location.FuncName()};
+}
+
+inline constexpr auto GetLogSourceLocation(std::source_location location)
 {
     return spdlog::source_loc{location.file_name(), static_cast<int>(location.line()), location.function_name()};
+}
+
+inline constexpr auto GetCurrentSourceLocation()
+{
+    return std::source_location::current(__builtin_LINE(), __builtin_COLUMN(), __builtin_FILE(), __builtin_FUNCTION());
 }
 
 template <typename Mutex>
@@ -315,7 +325,7 @@ namespace Log
     template <typename... Args>
     struct trace
     {
-        constexpr trace(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
+        constexpr trace(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::trace, fmt, std::forward<Args>(args)...);
         }
@@ -328,7 +338,7 @@ namespace Log
     template <typename... Args>
     struct debug
     {
-        constexpr debug(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
+        constexpr debug(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::debug, fmt, std::forward<Args>(args)...);
         }
@@ -341,7 +351,7 @@ namespace Log
     template <typename... Args>
     struct info
     {
-        constexpr info(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
+        constexpr info(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::info, fmt, std::forward<Args>(args)...);
         }
@@ -354,7 +364,7 @@ namespace Log
     template <typename... Args>
     struct warn
     {
-        constexpr warn(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
+        constexpr warn(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::warn, fmt, std::forward<Args>(args)...);
         }
@@ -367,7 +377,7 @@ namespace Log
     template <typename... Args>
     struct error
     {
-        constexpr error(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
+        constexpr error(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::err, fmt, std::forward<Args>(args)...);
         }
@@ -380,7 +390,7 @@ namespace Log
     template <typename... Args>
     struct critical
     {
-        constexpr critical(spdlog::format_string_t<Args...> fmt, Args &&...args, std::source_location location = {})
+        constexpr critical(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::critical, fmt, std::forward<Args>(args)...);
         }

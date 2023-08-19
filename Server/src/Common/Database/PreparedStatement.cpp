@@ -8,6 +8,7 @@
 ************************************************************************/
 #include "pch.h"
 #include "PreparedStatement.h"
+#include "Common/include/Assert.h"
 
 PreparedStatementBase::PreparedStatementBase(uint32_t preparedStatementIndex, uint8_t capacity)
     : _preparedStatementIndex(preparedStatementIndex), _statementData(capacity)
@@ -17,6 +18,6 @@ PreparedStatementBase::PreparedStatementBase(uint32_t preparedStatementIndex, ui
 template <typename ValueType>
 void PreparedStatementBase::SetValue(const uint8_t &index, const ValueType &value)
 {
-    assert(index < _statementData.size());
+    Assert(index < _statementData.size());
     _statementData[index]._data = value;
 }

@@ -47,26 +47,58 @@ Checks: "
 
   "
 CheckOptions:
+  #抽象接口类使用大驼峰，并且加上I前缀
+  - key: readability-identifier-naming.AbstractClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.AbstractClassPrefix
+    value: I
+
+    #类名使用大驼峰
   - key: readability-identifier-naming.ClassCase
     value: CamelCase
-  - key: readability-identifier-naming.EnumCase
-    value: CamelCase
+
+  #函数使用大驼峰命名
   - key: readability-identifier-naming.FunctionCase
     value: CamelCase
-  - key: readability-identifier-naming.GlobalConstantCase
-    value: UPPER_CASE
+  - key: readability-identifier-naming.GlobalFunctionCase
+    value: CamelCase
+  - key: readability-identifier-naming.MethodCase
+    value: CamelBackreadability-identifier-naming.ClassMemberPrefix
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+
+    #类成员小驼峰，加上前缀 _
   - key: readability-identifier-naming.ClassMemberPrefix
     value: _
-  - key: readability-identifier-naming.MemberCase
-    value: camelBack
-  - key: readability-identifier-naming.NamespaceCase
-    value: CamelCase
-  - key: readability-identifier-naming.StructCase
-    value: CamelCase
-  - key: readability-identifier-naming.UnionCase
-    value: CamelCase
+  - key: readability-identifier-naming.ClassMemberCase
+    value: camelCase
+  - key: readability-identifier-naming.ClassMemberPrefix
+    value: _
+
+  #变量统一使用小驼峰：int iMyVariable;
   - key: readability-identifier-naming.VariableCase
-    value: camelBack
+    value: camelCase
+  - key: readability-identifier-naming.GlobalVariableCase
+    value: CamelCase
+  - key: readability-identifier-naming.GlobalVariablePrefix
+    value: g_
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+
+  - key: readability-function-size.LineThreshold
+    value: 150
+  # 函数参数超过5个的警报
+  - key: readability-function-size.ParameterThreshold
+    value: 5
+  # 函数嵌套超过4个的警报
+  - key: readability-function-size.NestingThreshold
+    value: 5
+  - key: misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value: true
+  - key: cppcoreguidelines-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic
+    value: true
+  - key: cppcoreguidelines-pro-type-member-init.UseAssignment
+    value: true
 WarningsAsErrors: ""
 HeaderFilterRegex: "/(src|test)/include"
 AnalyzeTemporaryDtors: true
