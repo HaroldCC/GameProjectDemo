@@ -13,7 +13,6 @@
 #include "boost/beast.hpp"
 #include "mysql.h"
 #include "Common/threading/ProducerConsumerQueue.hpp"
-#include "Common/include/Assert.h"
 
 namespace http = boost::beast::http;
 
@@ -200,8 +199,34 @@ void testMysql()
 {
     mysql_library_init(0, nullptr, nullptr);
     MYSQL *mysql = mysql_init(nullptr);
-    auto   p     = mysql_real_connect(mysql, "127.0.0.1", "root", "cr11234", "test", 3306, nullptr, 0);
-    int    i     = 1;
+    mysql        = mysql_real_connect(mysql, "127.0.0.1", "root", "cr11234", "test", 3306, nullptr, 0);
+    if (nullptr == mysql)
+    {
+        Log::error("连接数据库失败：{}", mysql_error(mysql));
+        return;
+    }
+
+    auto i = mysql_query(mysql, "select name, sex, age, weight from user");
+    Log::debug("query:{}", i);
+    MYSQL_RES *pRes = mysql_store_result(mysql);
+
+    MYSQL_ROW      pRow    = mysql_fetch_row(pRes);
+    unsigned long *pLength = mysql_fetch_lengths(pRes);
+
+    auto fieldCount = mysql_field_count(mysql);
+    for (uint32_t i = 0; i < fieldCount; ++i)
+    {
+        Log::debug("row:{}, length:{}", pRow[i], pLength[i])
+    }
+
+    Log::debug("---------------------------");
+    MYSQL_STMT *pStmt = mysql_stmt_init(mysql);
+    if (mysql_stmt_prepare(pStmt, "select * form user", 1024))
+    {
+        Log::error("prepared statement error:{}", mysql_error(mysql));
+        return;
+    }
+    // pRes = mysql_stmt_
 }
 
 enum class EType : uint32_t
@@ -455,10 +480,7 @@ int main(int argc, char **argv)
     queueA.pop();
 
     Log::debug("--------------------------------测试enum class 自动转换------------------------");
-
-    // Test();
-
-    Log::debug("这是一个测试{}, {}, {}, {}", "hello world", "你好", 12, 3.14);
+    testMysql();
 
     return 0;
 }

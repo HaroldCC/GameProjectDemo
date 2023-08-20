@@ -12,6 +12,7 @@
 #include "Common/include/Performance.hpp"
 #include "mysqld_error.h"
 #include "DatabaseWorker.h"
+#include "PreparedStatement.h"
 
 using namespace std::literals::chrono_literals;
 
@@ -34,6 +35,11 @@ MySqlConnection::MySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, c
       _queue(queue)
 {
     _worker = std::make_unique<DatabaseWorker>(queue, this);
+}
+
+MySqlConnection::~MySqlConnection()
+{
+    Close();
 }
 
 /**
@@ -82,6 +88,9 @@ uint32_t MySqlConnection::Open()
 
 void MySqlConnection::Close()
 {
+    _worker.reset();
+    _stmts.clear();
+
     if (nullptr != _mysql)
     {
         mysql_close(_mysql);
@@ -123,6 +132,22 @@ bool MySqlConnection::Execute(std::string_view sql)
     }
 
     return true;
+}
+
+/**
+ * @brief 指定预处理语句，不需要结果
+ *
+ * @param stmt 预处理语句
+ * @return bool 执行是否成功
+ */
+bool MySqlConnection::Execute(PreparedStatementBase *stmt)
+{
+    if (nullptr == _mysql)
+    {
+        return false;
+    }
+
+    uint32_t index = stmt->GetIndex();
 }
 
 bool MySqlConnection::TryLock()

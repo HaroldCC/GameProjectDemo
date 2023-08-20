@@ -33,6 +33,77 @@ enum class DatabaseFieldType : uint8_t
     Binary
 };
 
+template <typename T>
+struct MysqlType
+{
+};
+
+template <>
+struct MysqlType<uint8_t> : std::integral_constant<enum_field_types, MYSQL_TYPE_TINY>
+{
+};
+
+template <>
+struct MysqlType<uint16_t> : std::integral_constant<enum_field_types, MYSQL_TYPE_SHORT>
+{
+};
+
+template <>
+struct MysqlType<uint32_t> : std::integral_constant<enum_field_types, MYSQL_TYPE_LONG>
+{
+};
+
+template <>
+struct MysqlType<uint64_t> : std::integral_constant<enum_field_types, MYSQL_TYPE_LONGLONG>
+{
+};
+
+template <>
+struct MysqlType<int8_t> : std::integral_constant<enum_field_types, MYSQL_TYPE_TINY>
+{
+};
+
+template <>
+struct MysqlType<int16_t> : std::integral_constant<enum_field_types, MYSQL_TYPE_SHORT>
+{
+};
+
+template <>
+struct MysqlType<int32_t> : std::integral_constant<enum_field_types, MYSQL_TYPE_LONG>
+{
+};
+
+template <>
+struct MysqlType<int64_t> : std::integral_constant<enum_field_types, MYSQL_TYPE_LONGLONG>
+{
+};
+
+template <>
+struct MysqlType<float> : std::integral_constant<enum_field_types, MYSQL_TYPE_FLOAT>
+{
+};
+
+template <>
+struct MysqlType<double> : std::integral_constant<enum_field_types, MYSQL_TYPE_DOUBLE>
+{
+};
+
+template <DatabaseFieldType>
+struct FieldValueType
+{
+};
+template <>
+struct FieldValueType<DatabaseFieldType::UInt8>
+{
+    using type = uint8_t;
+};
+
+template <>
+struct FieldValueType<DatabaseFieldType::Double>
+{
+    using type = double;
+};
+
 // 查询结果字段信息
 struct QueryResultFieldMetadata
 {
@@ -85,37 +156,12 @@ class Field
 
 public:
     Field();
-    // ~Field();
+    Field(const Field &)            = default;
+    Field &operator=(const Field &) = default;
+    ~Field()                        = default;
 
-    // template <typename T>
-    //     requires std::is_same_v<T, ESqlValueType>
-    // auto GetValue(T type)
-    // {
-    //     switch (type)
-    //     {
-    //     case ESqlValueType::Error:
-    //     case ESqlValueType::Null:
-    //         return nullptr;
-    //     case ESqlValueType::Bool:
-    //         return GetUInt8() == 1;
-    //     case ESqlValueType::UInt8:
-    //     case ESqlValueType::UInt16:
-    //     case ESqlValueType::UInt32:
-    //     case ESqlValueType::UInt64:
-    //     case ESqlValueType::Int8:
-    //     case ESqlValueType::Int16:
-    //     case ESqlValueType::Int32:
-    //     case ESqlValueType::Int64:
-    //     case ESqlValueType::Float:
-    //     case ESqlValueType::Double:
-    //     case ESqlValueType::String:
-    //     case ESqlValueType::Binary:
-    //         break;
-    //     }
-    // }
-
-    //     return GetUInt8();
-    // }
+    Field(Field &&)            = delete;
+    Field &operator=(Field &&) = delete;
 
 private:
     [[nodiscard]] bool GetBool() const // Wrapper, actually gets integer
@@ -123,27 +169,27 @@ private:
         return GetUInt8() == 1;
     }
 
-    [[nodiscard]] uint8_t              GetUInt8() const;
-    [[nodiscard]] int8_t               GetInt8() const;
-    [[nodiscard]] uint16_t             GetUInt16() const;
-    [[nodiscard]] int16_t              GetInt16() const;
-    [[nodiscard]] uint32_t             GetUInt32() const;
-    [[nodiscard]] int32_t              GetInt32() const;
-    [[nodiscard]] uint64_t             GetUInt64() const;
-    [[nodiscard]] int64_t              GetInt64() const;
-    [[nodiscard]] float                GetFloat() const;
-    [[nodiscard]] double               GetDouble() const;
-    [[nodiscard]] char const          *GetCString() const;
-    [[nodiscard]] std::string          GetString() const;
-    [[nodiscard]] std::string_view     GetStringView() const;
-    [[nodiscard]] std::vector<uint8_t> GetBinary() const;
-    template <size_t S>
-    std::array<uint8_t, S> GetBinary() const
-    {
-        std::array<uint8_t, S> buf;
-        GetBinarySizeChecked(buf.data(), S);
-        return buf;
-    }
+    [[nodiscard]] uint8_t     GetUInt8() const;
+    [[nodiscard]] int8_t      GetInt8() const;
+    [[nodiscard]] uint16_t    GetUInt16() const;
+    [[nodiscard]] int16_t     GetInt16() const;
+    [[nodiscard]] uint32_t    GetUInt32() const;
+    [[nodiscard]] int32_t     GetInt32() const;
+    [[nodiscard]] uint64_t    GetUInt64() const;
+    [[nodiscard]] int64_t     GetInt64() const;
+    [[nodiscard]] float       GetFloat() const;
+    [[nodiscard]] double      GetDouble() const;
+    [[nodiscard]] char const *GetCString() const;
+    // [[nodiscard]] std::string          GetString() const;
+    // [[nodiscard]] std::string_view     GetStringView() const;
+    // [[nodiscard]] std::vector<uint8_t> GetBinary() const;
+    // template <size_t S>
+    // std::array<uint8_t, S> GetBinary() const
+    // {
+    //     std::array<uint8_t, S> buf;
+    //     GetBinarySizeChecked(buf.data(), S);
+    //     return buf;
+    // }
 
     [[nodiscard]] bool IsNull() const
     {
@@ -151,7 +197,9 @@ private:
     }
 
 public:
-    DatabaseFieldType GetType();
+    [[nodiscard]] DatabaseFieldType GetType() const;
+
+    [[nodiscard]] bool IsType(DatabaseFieldType type) const;
 
     explicit operator uint8_t()
     {
@@ -193,12 +241,14 @@ public:
         return GetInt64();
     }
 
-    explicit operator std::string()
+    explicit operator const char *()
     {
-        return GetString();
+        return GetCString();
     }
 
 private:
+    void LogWrongGetter(const char *getter) const;
+
     void SetValue(char const *newValue, uint32_t length);
 
     void SetMetadata(const QueryResultFieldMetadata *fieldMeta);

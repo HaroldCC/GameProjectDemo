@@ -28,3 +28,38 @@ template <typename ConnectionType>
 void DatabaseWorkerPool<ConnectionType>::Close()
 {
 }
+
+template <typename ConnectionType>
+ResultSet DatabaseWorkerPool<ConnectionType>::AsyncQuery(std::string_view sql)
+{
+}
+
+template <typename ConnectionType>
+ResultSet DatabaseWorkerPool<ConnectionType>::SyncQuery(std::string_view sql, ConnectionType *pConnection /* = nullptr */)
+{
+    if (nullptr == pConnection)
+    {
+        pConnection = GetFreeConnection();
+    }
+
+    ResultSet *pResult = pConnection->Query(sql);
+    pConnection->Unlock();
+}
+
+template <typename ConnectionType>
+ConnectionType *DatabaseWorkerPool<ConnectionType>::GetFreeConnection()
+{
+    const auto      connectionCount = _connections[EConnectionTypeIndex_Sync].size();
+    ConnectionType *pConnection     = nullptr;
+    uint8_t         index           = 0;
+    while (nullptr == pConnection)
+    {
+        pConnection = _connections[EConnectionTypeIndex_Sync][index++ % connectionCount].get();
+        if (pConnection->TryLock())
+        {
+            break;
+        }
+    }
+
+    return pConnection;
+}

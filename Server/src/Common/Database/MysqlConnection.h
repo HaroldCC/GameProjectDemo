@@ -107,10 +107,11 @@ protected:
                uint64_t *pRowCount, uint32_t *pFieldCount);
 
 protected:
-    MySqlConnectionInfo _connectionInfo;
-    bool                _reconnecting;
-    bool                _prepareError;
-    ConnectionType      _connectType;
+    MySqlConnectionInfo                  _connectionInfo;
+    bool                                 _reconnecting;
+    bool                                 _prepareError;
+    ConnectionType                       _connectType;
+    std::vector<PreparedStatementBase *> _stmts;
 
 private:
     MySqlHandle                           *_mysql;
