@@ -11,7 +11,7 @@
 #include "DatabaseWorker.h"
 #include "SqlOperation.h"
 
-DatabaseWorker::DatabaseWorker(ProducerConsumerQueue<SQLOperation *> *queue, MySqlConnection *sqlConn)
+DatabaseWorker::DatabaseWorker(ProducerConsumerQueue<SQLOperation *> *queue, IMySqlConnection *sqlConn)
     : _queue(queue), _sqlConn(sqlConn), _canceling(false)
 {
     _workerThread = std::thread(&DatabaseWorker::WorkThread, this);

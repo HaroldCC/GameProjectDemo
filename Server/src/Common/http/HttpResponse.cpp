@@ -39,7 +39,7 @@ namespace Http
         }
         catch (const std::exception &e)
         {
-            Log::error("Http set header error:{}", e.what());
+            Log::Error("Http set header error:{}", e.what());
         }
     }
 
@@ -51,7 +51,7 @@ namespace Http
         }
         catch (const std::exception &e)
         {
-            Log::error("Http set header error:{}", e.what());
+            Log::Error("Http set header error:{}", e.what());
         }
     }
 
@@ -63,7 +63,7 @@ namespace Http
         }
         catch (const std::exception &e)
         {
-            Log::error("Http set body error:{}", e.what());
+            Log::Error("Http set body error:{}", e.what());
         }
     }
 } // namespace Http

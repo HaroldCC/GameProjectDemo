@@ -21,21 +21,21 @@ using MySqlStmt   = MYSQL_STMT;
 using MySqlBool = std::remove_pointer_t<decltype(std::declval<MYSQL_BIND>().is_null)>;
 
 // 数据库值类型
-enum class ESqlValueType : uint8_t
+// 数据库字段类型
+enum class DatabaseFieldType : uint8_t
 {
-    Error, // 错误类型
-    Null,  // 空类型
-    Bool,
+    Null,
     UInt8,
-    UInt16,
-    UInt32,
-    UInt64,
     Int8,
+    UInt16,
     Int16,
+    UInt32,
     Int32,
+    UInt64,
     Int64,
     Float,
     Double,
-    String,
-    Binary,
+    Decimal,
+    Date,
+    Binary
 };

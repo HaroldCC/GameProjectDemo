@@ -34,20 +34,21 @@ class DatabaseWorker;
 class PreparedStatementBase;
 class ResultSet;
 class PreparedResultSet;
+class MySqlPreparedStatement;
 
-class MySqlConnection
+class IMySqlConnection
 {
     template <typename ConnectionType>
     friend class DatabaseWorkerPool;
 
 public:
-    explicit MySqlConnection(const MySqlConnectionInfo &connInfo);
-    MySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, const MySqlConnectionInfo &connInfo);
-    virtual ~MySqlConnection();
-    MySqlConnection(const MySqlConnection &)            = delete;
-    MySqlConnection &operator=(const MySqlConnection &) = delete;
-    MySqlConnection(MySqlConnection &&)                 = delete;
-    MySqlConnection &operator=(MySqlConnection &&)      = delete;
+    explicit IMySqlConnection(const MySqlConnectionInfo &connInfo);
+    IMySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, const MySqlConnectionInfo &connInfo);
+    virtual ~IMySqlConnection();
+    IMySqlConnection(const IMySqlConnection &)            = delete;
+    IMySqlConnection &operator=(const IMySqlConnection &) = delete;
+    IMySqlConnection(IMySqlConnection &&)                 = delete;
+    IMySqlConnection &operator=(IMySqlConnection &&)      = delete;
 
     /**
      * @brief 开启连接
@@ -97,6 +98,7 @@ public:
 
 protected:
     virtual void DoPrepareStatements() = 0;
+    void         PrepareStatement(uint32_t index, std::string_view sql, ConnectionType ConnType);
 
     bool TryLock();
     void UnLock();
@@ -107,11 +109,11 @@ protected:
                uint64_t *pRowCount, uint32_t *pFieldCount);
 
 protected:
-    MySqlConnectionInfo                  _connectionInfo;
-    bool                                 _reconnecting;
-    bool                                 _prepareError;
-    ConnectionType                       _connectType;
-    std::vector<PreparedStatementBase *> _stmts;
+    MySqlConnectionInfo                                  _connectionInfo;
+    bool                                                 _reconnecting;
+    bool                                                 _prepareError;
+    ConnectionType                                       _connectType;
+    std::vector<std::unique_ptr<MySqlPreparedStatement>> _stmts;
 
 private:
     MySqlHandle                           *_mysql;

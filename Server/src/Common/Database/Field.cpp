@@ -19,6 +19,7 @@ Field::Field()
 
 DatabaseFieldType Field::GetType() const
 {
+    return _meta->fieldType;
 }
 
 bool Field::IsType(DatabaseFieldType type) const

@@ -55,11 +55,6 @@ inline constexpr auto GetLogSourceLocation(std::source_location location)
     return spdlog::source_loc{location.file_name(), static_cast<int>(location.line()), location.function_name()};
 }
 
-inline constexpr auto GetCurrentSourceLocation()
-{
-    return std::source_location::current(__builtin_LINE(), __builtin_COLUMN(), __builtin_FILE(), __builtin_FUNCTION());
-}
-
 template <typename Mutex>
 class HtmlFormatSink final : public spdlog::sinks::base_sink<Mutex>
 {
@@ -267,7 +262,7 @@ using HtmlFormatSink_st = HtmlFormatSink<spdlog::details::null_mutex>;
 inline constexpr std::string_view GetDefaultLogPattern()
 {
 #if defined(_DEBUG) || defined(DEBUG)
-    return "%^[%Y-%m-%d %T%e] (%s:%# %!) %l: %v%$";
+    return "%^[%Y-%m-%d %T%e] [%s:%# %!] %l: %v%$";
 #else
     return "%^[%Y-%m-%d %T%e] %l: %v%$";
 #endif
@@ -287,14 +282,16 @@ namespace Log
         CLogger(const CLogger &)            = delete;
         CLogger &operator=(const CLogger &) = delete;
         CLogger(CLogger &&)                 = delete;
+        CLogger &operator=(CLogger &&)      = delete;
 
         // void SetLevel(spdlog::level::level_enum level)
         // {
         //     _logger->set_level(level);
         // }
 
-        void InitLogger(std::string_view fileName, size_t level, size_t maxFileSize, size_t maxFiles,
-                        std::string_view pattern = GetDefaultLogPattern())
+        void
+        InitLogger(std::string_view fileName, size_t level, size_t maxFileSize, size_t maxFiles,
+                   std::string_view pattern = GetDefaultLogPattern())
         {
             auto fileSink = std::make_shared<HtmlFormatSink_mt>(std::string(fileName),
                                                                 maxFileSize * 1024 * 1024, maxFiles);
@@ -321,81 +318,131 @@ namespace Log
         std::shared_ptr<spdlog::logger> _logger;
     };
 
-    // trace
+#ifdef LOG_STRUCT_TEMPLATE_IMPL
     template <typename... Args>
-    struct trace
+    struct Trace
     {
-        constexpr trace(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr Trace(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::trace, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    trace(spdlog::format_string_t<Args...> fmt, Args &&...args) -> trace<Args...>;
+    Trace(spdlog::format_string_t<Args...> fmt, Args &&...args) -> Trace<Args...>;
 
     // debug
     template <typename... Args>
-    struct debug
+    struct Debug
     {
-        constexpr debug(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr Debug(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::debug, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    debug(spdlog::format_string_t<Args...> fmt, Args &&...args) -> debug<Args...>;
+    Debug(spdlog::format_string_t<Args...> fmt, Args &&...args) -> Debug<Args...>;
 
     // info
     template <typename... Args>
-    struct info
+    struct Info
     {
-        constexpr info(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr Info(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::info, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    info(spdlog::format_string_t<Args...> fmt, Args &&...args) -> info<Args...>;
+    Info(spdlog::format_string_t<Args...> fmt, Args &&...args) -> Info<Args...>;
 
     // warn
     template <typename... Args>
-    struct warn
+    struct Warn
     {
-        constexpr warn(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr Warn(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::warn, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    warn(spdlog::format_string_t<Args...> fmt, Args &&...args) -> warn<Args...>;
+    Warn(spdlog::format_string_t<Args...> fmt, Args &&...args) -> Warn<Args...>;
 
     // error
     template <typename... Args>
-    struct error
+    struct Error
     {
-        constexpr error(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr Error(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::err, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    error(spdlog::format_string_t<Args...> fmt, Args &&...args) -> error<Args...>;
+    Error(spdlog::format_string_t<Args...> fmt, Args &&...args) -> Error<Args...>;
 
     // critical
     template <typename... Args>
-    struct critical
+    struct Critical
     {
-        constexpr critical(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
+        constexpr Critical(spdlog::format_string_t<Args...> fmt, Args &&...args, SourceLocation location = {})
         {
             spdlog::log(GetLogSourceLocation(location), spdlog::level::critical, fmt, std::forward<Args>(args)...);
         }
     };
 
     template <typename... Args>
-    critical(spdlog::format_string_t<Args...> fmt, Args &&...args) -> critical<Args...>;
+    Critical(spdlog::format_string_t<Args...> fmt, Args &&...args) -> Critical<Args...>;
+
+#else
+    struct FormatWithLocation
+    {
+        std::string_view     format;
+        std::source_location location;
+
+        template <typename String>
+        constexpr FormatWithLocation(String &&fmt, std::source_location location = std::source_location::current())
+            : format(std::forward<String>(fmt)), location(location)
+        {
+        }
+    };
+
+    template <typename... Args>
+    void Tracy(FormatWithLocation fmt, Args &&...args)
+    {
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::trace, fmt.format, std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    void Debug(FormatWithLocation fmt, Args &&...args)
+    {
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::debug, fmt.format, std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    void Info(FormatWithLocation fmt, Args &&...args)
+    {
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::info, fmt.format, std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    void Warn(FormatWithLocation fmt, Args &&...args)
+    {
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::warn, fmt.format, std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    void Error(FormatWithLocation fmt, Args &&...args)
+    {
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::err, fmt.format, std::forward<Args>(args)...);
+    }
+
+    template <typename... Args>
+    void Critical(FormatWithLocation fmt, Args &&...args)
+    {
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::critical, fmt.format, std::forward<Args>(args)...);
+    }
+#endif
 } // namespace Log

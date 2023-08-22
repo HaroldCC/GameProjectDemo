@@ -16,7 +16,7 @@ namespace net
         _socket.shutdown(asio::socket_base::shutdown_send, error);
         if (error)
         {
-            Log::error("shutdown Socket ip:{} error, errorCode:{}, message:{}",
+            Log::Error("shutdown Socket ip:{} error, errorCode:{}, message:{}",
                        GetRemoteIpAddress().to_string(), error.value(), error.message());
         }
     }
@@ -35,7 +35,7 @@ namespace net
                                 {
                                     if (errcode)
                                     {
-                                        Log::error("读取消息出错：{}", errcode.message());
+                                        Log::Error("读取消息出错：{}", errcode.message());
                                         CloseSession();
                                         return;
                                     }
@@ -53,20 +53,20 @@ namespace net
     {
         MessageDef::Message send;
         send.set_header(header);
-        Log::debug("header = {}", header);
+        Log::Debug("header = {}", header);
         send.set_content(message);
         MessageBuffer content(send.ByteSizeLong());
         if (send.SerializeToArray(content.GetWritPointer(), (int)content.WritableBytes()))
         {
             content.WriteDone(send.ByteSizeLong());
-            Log::debug("send len:{}", content.ReadableBytes());
+            Log::Debug("send len:{}", content.ReadableBytes());
             _writeBufferQueue.push(std::move(content));
 
             AsyncWrite();
         }
         else
         {
-            Log::error("发送消息出错：【header:{}, content:{}】", header, message);
+            Log::Error("发送消息出错：【header:{}, content:{}】", header, message);
         }
     }
 
@@ -85,7 +85,7 @@ namespace net
                                      if (errcode)
                                      {
                                          CloseSession();
-                                         Log::error("发送消息失败：{}", errcode.message());
+                                         Log::Error("发送消息失败：{}", errcode.message());
                                          return;
                                      }
 
@@ -122,7 +122,7 @@ namespace net
 
             packet.ReadDone(packet.ReadableBytes());
 
-            Log::debug("receive message[header:{}, content:{}]", message.header(), message.content());
+            Log::Debug("receive message[header:{}, content:{}]", message.header(), message.content());
 
             std::string response = R"(Hello Client
                                     // _header = asio::detail::socket_ops::network_to_host_long(_header);

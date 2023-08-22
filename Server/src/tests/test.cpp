@@ -33,16 +33,16 @@ void TestLog()
 {
     for (int i = 0; i < 1; ++i)
     {
-        Log::error("==={}===", i);
+        Log::Error("==={}===", i);
         // Log::trace("current level {{{}}}", spdlog::get_level());
         // Log::debug("changed level {}", spdlog::get_level());
 
-        Log::info("hello {}", "demo");
-        Log::warn("this is an error{}", 101);
-        Log::error("this is a debug log {}", 202);
-        Log::critical("this is a trace log {}", 303);
+        Log::Info("hello {}", "demo");
+        Log::Warn("this is an error{}", 101);
+        Log::Error("this is a debug log {}", 202);
+        Log::Critical("this is a trace log {}", 303);
 
-        Log::error("this is {}, this is a {}, this is {}", "hello", 1, "world");
+        Log::Error("this is {}, this is a {}, this is {}", "hello", 1, "world");
     }
 
     // auto i = asio::buffer("1234");
@@ -202,12 +202,12 @@ void testMysql()
     mysql        = mysql_real_connect(mysql, "127.0.0.1", "root", "cr11234", "test", 3306, nullptr, 0);
     if (nullptr == mysql)
     {
-        Log::error("连接数据库失败：{}", mysql_error(mysql));
+        Log::Error("连接数据库失败：{}", mysql_error(mysql));
         return;
     }
 
     auto i = mysql_query(mysql, "select name, sex, age, weight from user");
-    Log::debug("query:{}", i);
+    Log::Debug("query:{}", i);
     MYSQL_RES *pRes = mysql_store_result(mysql);
 
     MYSQL_ROW      pRow    = mysql_fetch_row(pRes);
@@ -216,14 +216,14 @@ void testMysql()
     auto fieldCount = mysql_field_count(mysql);
     for (uint32_t i = 0; i < fieldCount; ++i)
     {
-        Log::debug("row:{}, length:{}", pRow[i], pLength[i])
+        Log::Debug("row:{}, length:{}", pRow[i], pLength[i]);
     }
 
-    Log::debug("---------------------------");
+    Log::Debug("---------------------------");
     MYSQL_STMT *pStmt = mysql_stmt_init(mysql);
     if (mysql_stmt_prepare(pStmt, "select * form user", 1024))
     {
-        Log::error("prepared statement error:{}", mysql_error(mysql));
+        Log::Error("prepared statement error:{}", mysql_error(mysql));
         return;
     }
     // pRes = mysql_stmt_
@@ -274,11 +274,11 @@ int main(int argc, char **argv)
     packet.reserve(sizeof(header) + buff.size());
     packet.push_back(header);
     packet.insert(packet.cend(), buff.begin(), buff.end());
-    Log::error("packet size:{}", packet.size());
+    Log::Error("packet size:{}", packet.size());
 
     for (auto &&i : packet)
     {
-        Log::error("{}\n", i);
+        Log::Error("{}\n", i);
     }
 
     std::string_view content("This is a string_view !");
@@ -288,7 +288,7 @@ int main(int argc, char **argv)
     //     Log::debug("item:{}", item);
     // }
 
-    Log::debug("---------------------http test---------------------------");
+    Log::Debug("---------------------http test---------------------------");
     // TestBoostBeastHttpParser();
     // TestHttpParser();
     // boost::beast::http::response<boost::beast::http::string_body> response;
@@ -324,7 +324,7 @@ int main(int argc, char **argv)
             std::string strKey = str1 + std::to_string(i);
             map[strKey]        = i;
         }
-        Log::debug("tesMapJoinKey map.size() = {}, {}, {}, {}", map.size(), timer.ElapsedNanosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
+        Log::Debug("tesMapJoinKey map.size() = {}, {}, {}, {}", map.size(), timer.ElapsedNanosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
     };
 
     auto testMapMap = []()
@@ -337,21 +337,21 @@ int main(int argc, char **argv)
             con[std::to_string(i).data()] = i;
         }
 
-        Log::debug("testMapMap map.size() = {}, {}, {}, {}", map.size(), timer.ElapsedNanosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
+        Log::Debug("testMapMap map.size() = {}, {}, {}, {}", map.size(), timer.ElapsedNanosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
     };
 
     testMapJoinKey();
     testMapMap();
 
-    Log::debug("-----------------------test base64-------------");
+    Log::Debug("-----------------------test base64-------------");
 
     testMysql();
 
     Timer timer;
     std::this_thread::sleep_for(2s);
-    Log::debug("micro:{}, milisec:{}, sec:{}", timer.ElapsedMicrosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
+    Log::Debug("micro:{}, milisec:{}, sec:{}", timer.ElapsedMicrosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
 
-    Log::debug("---------------------------test ProducerConsumerQueue-------------------");
+    Log::Debug("---------------------------test ProducerConsumerQueue-------------------");
     ProducerConsumerQueue<int *> queueIntPointer;
     // std::thread                  tProducer([&]()
     //                       {
@@ -364,7 +364,7 @@ int main(int argc, char **argv)
     for (int i = 0; i < 10; ++i)
     {
         int *tmp = new int(i);
-        Log::debug("push {} {:p})", *tmp, (void *)tmp);
+        Log::Debug("push {} {:p})", *tmp, (void *)tmp);
         // std::cout << std::format("push {}:{:p}", i, (void *)&i);
         queueIntPointer.Push(tmp);
     }
@@ -377,7 +377,7 @@ int main(int argc, char **argv)
                             if (nullptr != intPointer)
                             {
                                 // std::cout << *intPointer << std::endl;
-                                Log::debug("pop:{}", *intPointer);
+                                Log::Debug("pop:{}", *intPointer);
                             } } });
 
     ProducerConsumerQueue<int> queueInt;
@@ -399,43 +399,43 @@ int main(int argc, char **argv)
             while(!queueInt.Empty())
         {
                 auto i = queueInt.WaitAndPop();
-                                 Log::debug("i:{}", i); } });
+                                 Log::Debug("i:{}", i); } });
 
     // tProducer.join();
     tConsumer.join();
     // tIntProducer.join();
     tIntCustomer.join();
 
-    Log::debug("-------------------------------unique_ptr---------------------");
+    Log::Debug("-------------------------------unique_ptr---------------------");
     struct A
     {
         A()
         {
-            Log::debug("A::A");
+            Log::Debug("A::A");
         }
 
         A &operator=(A &&)
         {
-            Log::debug("A::OpMtor");
+            Log::Debug("A::OpMtor");
         }
         A(const A &)
         {
-            Log::debug("A::Ctor");
+            Log::Debug("A::Ctor");
         }
 
         A(A &&)
         {
-            Log::debug("A::Mtor");
+            Log::Debug("A::Mtor");
         }
 
         A &operator=(const A &)
         {
-            Log::debug("A::opCtor");
+            Log::Debug("A::opCtor");
         }
 
         virtual ~A()
         {
-            Log::debug("A::~A");
+            Log::Debug("A::~A");
         }
     };
 
@@ -443,32 +443,32 @@ int main(int argc, char **argv)
     {
         B()
         {
-            Log::debug("B::B");
+            Log::Debug("B::B");
         }
 
         B(const B &)
         {
-            Log::debug("B::Ctor");
+            Log::Debug("B::Ctor");
         }
 
         B(B &&)
         {
-            Log::debug("B::Mtor");
+            Log::Debug("B::Mtor");
         }
 
         B &operator=(const B &)
         {
-            Log::debug("B::OpCtor");
+            Log::Debug("B::OpCtor");
         }
 
         B &operator=(B &&)
         {
-            Log::debug("B::OpMtor");
+            Log::Debug("B::OpMtor");
         }
 
         virtual ~B()
         {
-            Log::debug("B::~B");
+            Log::Debug("B::~B");
         }
     };
 
@@ -479,7 +479,7 @@ int main(int argc, char **argv)
     std::unique_ptr<A> pSB(queueA.front());
     queueA.pop();
 
-    Log::debug("--------------------------------测试enum class 自动转换------------------------");
+    Log::Debug("--------------------------------测试enum class 自动转换------------------------");
     testMysql();
 
     return 0;

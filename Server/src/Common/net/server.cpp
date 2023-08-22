@@ -39,7 +39,7 @@ namespace net
                     }
                     catch (const std::exception &e)
                     {
-                        Log::error("服务器异常退出:{}", e.what());
+                        Log::Error("服务器异常退出:{}", e.what());
                     }
                 }
             });

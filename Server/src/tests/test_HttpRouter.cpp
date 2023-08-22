@@ -9,7 +9,7 @@ using namespace std::literals;
 
 void test(const Http::HttpRequest &, const Http::HttpResponse &)
 {
-    Log::info("test");
+    Log::Info("test");
 }
 
 // TEST_CASE("Trie tests")

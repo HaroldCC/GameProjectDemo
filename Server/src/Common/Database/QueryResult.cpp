@@ -58,7 +58,7 @@ static constexpr uint32_t SizeForType(MYSQL_FIELD *field)
         MYSQL_TYPE_SET:
         */
     default:
-        Log::error("invalid field type {}", uint32_t(field->type));
+        Log::Error("invalid field type {}", uint32_t(field->type));
         return 0;
     }
 }
@@ -100,7 +100,7 @@ constexpr DatabaseFieldType MysqlTypeToFieldType(enum_field_types type, uint32_t
     case MYSQL_TYPE_VAR_STRING:
         return DatabaseFieldType::Binary;
     default:
-        Log::error("invalid field type {}", uint32_t(type));
+        Log::Error("invalid field type {}", uint32_t(type));
         break;
     }
 
@@ -216,7 +216,7 @@ bool ResultSet::NextRow()
     unsigned long *lengths = mysql_fetch_lengths(_pResult);
     if (nullptr == lengths)
     {
-        Log::warn("mysql_fetch_lengths 无法获取字段长度，Error：{}", mysql_error(_pResult->handle));
+        Log::Warn("mysql_fetch_lengths 无法获取字段长度，Error：{}", mysql_error(_pResult->handle));
         CleanUp();
         return false;
     }
@@ -277,7 +277,7 @@ PreparedResultSet::PreparedResultSet(MySqlStmt *pStmt, MySqlResult *pResult, uin
 
     if (0 != mysql_stmt_store_result(pStmt))
     {
-        Log::warn("mysql_stmt_store_result 存储结果集错误：{}", mysql_stmt_errno(pStmt));
+        Log::Warn("mysql_stmt_store_result 存储结果集错误：{}", mysql_stmt_errno(pStmt));
         delete[] _pBind;
         delete[] pIsNull;
         delete[] pLength;
@@ -315,7 +315,7 @@ PreparedResultSet::PreparedResultSet(MySqlStmt *pStmt, MySqlResult *pResult, uin
 
     if (mysql_stmt_bind_result(_pStmt, _pBind))
     {
-        Log::warn("mysql_stmt_bind_result 绑定结果集错误：{}", mysql_stmt_errno(_pStmt));
+        Log::Warn("mysql_stmt_bind_result 绑定结果集错误：{}", mysql_stmt_errno(_pStmt));
         mysql_stmt_free_result(_pStmt);
         CleanUp();
         delete[] pIsNull;

@@ -31,7 +31,7 @@
     {                                               \
         if (!(check))                               \
         {                                           \
-            Log::error(msg, __VA_ARGS__);           \
+            Log::Error(msg, __VA_ARGS__);           \
             DEBUG_BREAK();                          \
         }                                           \
     }

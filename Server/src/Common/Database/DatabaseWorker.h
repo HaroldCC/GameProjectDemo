@@ -10,12 +10,12 @@
 #include "Common/threading/ProducerConsumerQueue.hpp"
 
 class SQLOperation;
-class MySqlConnection;
+class IMySqlConnection;
 
 class DatabaseWorker
 {
 public:
-    DatabaseWorker(ProducerConsumerQueue<SQLOperation *> *queue, MySqlConnection *sqlConn);
+    DatabaseWorker(ProducerConsumerQueue<SQLOperation *> *queue, IMySqlConnection *sqlConn);
     ~DatabaseWorker();
     DatabaseWorker(const DatabaseWorker &)            = delete;
     DatabaseWorker(DatabaseWorker &&)                 = delete;
@@ -26,7 +26,7 @@ private:
     void WorkThread();
 
 private:
-    MySqlConnection                       *_sqlConn;
+    IMySqlConnection                      *_sqlConn;
     ProducerConsumerQueue<SQLOperation *> *_queue;
     std::thread                            _workerThread;
     std::atomic_bool                       _canceling;

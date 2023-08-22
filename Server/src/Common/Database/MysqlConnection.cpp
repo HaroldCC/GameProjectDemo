@@ -1,5 +1,5 @@
 ﻿/*************************************************************************
-> File Name       : MysqlConnection.cpp
+> File Name       : MySqlConnection.cpp
 > Brief           : 数据库连接
 > Author          : Harold
 > Mail            : 2106562095@qq.com
@@ -7,16 +7,17 @@
 > Created Time    : 2023年07月27日  15时37分16秒
 ************************************************************************/
 #include "pch.h"
-#include "MysqlConnection.h"
+#include "MySqlConnection.h"
 #include "Common/include/Log.hpp"
 #include "Common/include/Performance.hpp"
 #include "mysqld_error.h"
 #include "DatabaseWorker.h"
 #include "PreparedStatement.h"
+#include "MySqlPreparedStatement.h"
 
 using namespace std::literals::chrono_literals;
 
-MySqlConnection::MySqlConnection(const MySqlConnectionInfo &connInfo)
+IMySqlConnection::IMySqlConnection(const MySqlConnectionInfo &connInfo)
     : _connectionInfo(connInfo),
       _mysql(nullptr),
       _reconnecting(false),
@@ -26,7 +27,7 @@ MySqlConnection::MySqlConnection(const MySqlConnectionInfo &connInfo)
 {
 }
 
-MySqlConnection::MySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, const MySqlConnectionInfo &connInfo)
+IMySqlConnection::IMySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, const MySqlConnectionInfo &connInfo)
     : _connectionInfo(connInfo),
       _mysql(nullptr),
       _reconnecting(false),
@@ -37,7 +38,7 @@ MySqlConnection::MySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, c
     _worker = std::make_unique<DatabaseWorker>(queue, this);
 }
 
-MySqlConnection::~MySqlConnection()
+IMySqlConnection::~IMySqlConnection()
 {
     Close();
 }
@@ -47,12 +48,12 @@ MySqlConnection::~MySqlConnection()
  *
  * @return uint32_t 错误码（ref mysql_errno）
  */
-uint32_t MySqlConnection::Open()
+uint32_t IMySqlConnection::Open()
 {
     _mysql = mysql_init(nullptr);
     if (nullptr == _mysql)
     {
-        Log::error("初始化数据库：{}失败", _connectionInfo._database);
+        Log::Error("初始化数据库：{}失败", _connectionInfo._database);
         return CR_UNKNOWN_ERROR;
     }
 
@@ -68,7 +69,7 @@ uint32_t MySqlConnection::Open()
     if (nullptr == _mysql)
     {
         uint32_t errcode = mysql_errno(_mysql);
-        Log::error("连接数据库失败:{} [host:{}, user:{}, password:{}, database:{}, port:{}]", mysql_error(_mysql),
+        Log::Error("连接数据库失败:{} [host:{}, user:{}, password:{}, database:{}, port:{}]", mysql_error(_mysql),
                    _connectionInfo._host, _connectionInfo._user,
                    _connectionInfo._password, _connectionInfo._database, port);
         mysql_close(_mysql);
@@ -77,8 +78,8 @@ uint32_t MySqlConnection::Open()
 
     if (!_reconnecting)
     {
-        Log::info("Mysql client library:{}", mysql_get_client_info());
-        Log::info("Mysql server version:{}", mysql_get_server_info(_mysql));
+        Log::Info("Mysql client library:{}", mysql_get_client_info());
+        Log::Info("Mysql server version:{}", mysql_get_server_info(_mysql));
     }
 
     mysql_autocommit(_mysql, true);
@@ -86,7 +87,7 @@ uint32_t MySqlConnection::Open()
     return 0;
 }
 
-void MySqlConnection::Close()
+void IMySqlConnection::Close()
 {
     _worker.reset();
     _stmts.clear();
@@ -98,13 +99,13 @@ void MySqlConnection::Close()
     }
 }
 
-bool MySqlConnection::PrepareStatements()
+bool IMySqlConnection::PrepareStatements()
 {
     DoPrepareStatements();
     return !_prepareError;
 }
 
-bool MySqlConnection::Execute(std::string_view sql)
+bool IMySqlConnection::Execute(std::string_view sql)
 {
     if (nullptr == _mysql)
     {
@@ -116,8 +117,8 @@ bool MySqlConnection::Execute(std::string_view sql)
         if (0 != mysql_query(_mysql, sql.data()))
         {
             uint32_t errcode = mysql_errno(_mysql);
-            Log::info("执行sql脚本：SQL:{}", sql);
-            Log::error("执行sql脚本出错：[{}]{}", errcode, mysql_error(_mysql));
+            Log::Info("执行sql脚本：SQL:{}", sql);
+            Log::Error("执行sql脚本出错：[{}]{}", errcode, mysql_error(_mysql));
 
             // 处理mysql错误，如果返回true，表示成功处理，继续尝试执行
             if (HandleMysqlErrcode(errcode))
@@ -128,7 +129,7 @@ bool MySqlConnection::Execute(std::string_view sql)
             return false;
         }
 
-        Log::debug("执行脚本成功，耗时：{} ms SQL:{}", timer.ElapsedMillisec(), sql);
+        Log::Debug("执行脚本成功，耗时：{} ms SQL:{}", timer.ElapsedMillisec(), sql);
     }
 
     return true;
@@ -140,7 +141,7 @@ bool MySqlConnection::Execute(std::string_view sql)
  * @param stmt 预处理语句
  * @return bool 执行是否成功
  */
-bool MySqlConnection::Execute(PreparedStatementBase *stmt)
+bool IMySqlConnection::Execute(PreparedStatementBase *stmt)
 {
     if (nullptr == _mysql)
     {
@@ -150,17 +151,17 @@ bool MySqlConnection::Execute(PreparedStatementBase *stmt)
     uint32_t index = stmt->GetIndex();
 }
 
-bool MySqlConnection::TryLock()
+bool IMySqlConnection::TryLock()
 {
     return _mutex.try_lock();
 }
 
-void MySqlConnection::UnLock()
+void IMySqlConnection::UnLock()
 {
     _mutex.unlock();
 }
 
-bool MySqlConnection::HandleMysqlErrcode(uint32_t errcode, uint8_t tryReconnectTimes /* = 5 */)
+bool IMySqlConnection::HandleMysqlErrcode(uint32_t errcode, uint8_t tryReconnectTimes /* = 5 */)
 {
     switch (errcode)
     {
@@ -170,26 +171,26 @@ bool MySqlConnection::HandleMysqlErrcode(uint32_t errcode, uint8_t tryReconnectT
     {
         if (nullptr != _mysql)
         {
-            Log::error("Mysql server 连接丢失");
+            Log::Error("Mysql server 连接丢失");
             mysql_close(_mysql);
             _mysql = nullptr;
         }
     }
     case CR_CONN_HOST_ERROR:
     {
-        Log::info("Reconnecting Mysql server......");
+        Log::Info("Reconnecting Mysql server......");
         _reconnecting          = true;
         const uint32_t errcode = Open();
         if (0 != errcode)
         {
             if (!this->PrepareStatements())
             {
-                Log::critical("处理预处理sql语句失败，数据库连接即将断开!!!");
+                Log::Critical("处理预处理sql语句失败，数据库连接即将断开!!!");
                 std::this_thread::sleep_for(10s);
                 std::abort();
             }
 
-            Log::info("重连数据库成功：{} @{}:{} {}", _connectionInfo._database,
+            Log::Info("重连数据库成功：{} @{}:{} {}", _connectionInfo._database,
                       _connectionInfo._host, _connectionInfo._port,
                       ((uint8_t)_connectType & (uint8_t)ConnectionType::ASYNC) ? "异步方式" : "同步方式");
             _reconnecting = false;
@@ -198,7 +199,7 @@ bool MySqlConnection::HandleMysqlErrcode(uint32_t errcode, uint8_t tryReconnectT
 
         if ((--tryReconnectTimes) == 0)
         {
-            Log::critical("多次尝试重连数据库失败，服务中断！！！");
+            Log::Critical("多次尝试重连数据库失败，服务中断！！！");
             std::this_thread::sleep_for(10s);
             std::abort();
         }
@@ -218,18 +219,18 @@ bool MySqlConnection::HandleMysqlErrcode(uint32_t errcode, uint8_t tryReconnectT
     // Outdated table or database structure - terminate core
     case ER_BAD_FIELD_ERROR:
     case ER_NO_SUCH_TABLE:
-        Log::error("数据库未找到对应的表");
+        Log::Error("数据库未找到对应的表");
         std::this_thread::sleep_for(std::chrono::seconds(10));
         std::abort();
         return false;
     case ER_PARSE_ERROR:
-        Log::error("数据库脚本出错，请检查语法");
+        Log::Error("数据库脚本出错，请检查语法");
         std::this_thread::sleep_for(std::chrono::seconds(10));
         std::abort();
         return false;
     default:
     {
-        Log::error("未处理的Mysql 错误，错误码：{}", errcode);
+        Log::Error("未处理的Mysql 错误，错误码：{}", errcode);
         return false;
     }
     }

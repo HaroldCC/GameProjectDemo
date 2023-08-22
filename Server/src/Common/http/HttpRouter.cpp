@@ -23,7 +23,7 @@ namespace Http
         }
         catch (const std::exception &e)
         {
-            Log::error("添加路由失败：{} 路由信息：[{} {}]", e.what(), req.GetMethod(), req.GetPath());
+            Log::Error("添加路由失败：{} 路由信息：[{} {}]", e.what(), req.GetMethod(), req.GetPath());
             return std::nullopt;
         }
 
@@ -52,7 +52,7 @@ namespace Http
         }
         catch (const std::exception &e)
         {
-            Log::error("添加路由失败：{} 路由信息：[{} {}]", e.what(), method, path);
+            Log::Error("添加路由失败：{} 路由信息：[{} {}]", e.what(), method, path);
             return;
         }
 

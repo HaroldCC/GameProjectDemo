@@ -8,7 +8,7 @@
 ************************************************************************/
 #pragma once
 
-class MySqlConnection;
+class IMySqlConnection;
 
 class SQLOperation
 {
@@ -22,11 +22,11 @@ public:
     SQLOperation &operator=(SQLOperation &&)      = delete;
 
     virtual bool Execute() = 0;
-    virtual void SetConnection(MySqlConnection *sqlConn)
+    virtual void SetConnection(IMySqlConnection *sqlConn)
     {
         _sqlConn = sqlConn;
     }
 
 private:
-    MySqlConnection *_sqlConn = nullptr;
+    IMySqlConnection *_sqlConn = nullptr;
 };

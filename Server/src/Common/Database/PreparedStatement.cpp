@@ -19,5 +19,5 @@ template <typename ValueType>
 void PreparedStatementBase::SetValue(const uint8_t &index, const ValueType &value)
 {
     Assert(index < _statementData.size());
-    _statementData[index]._data = value;
+    _statementData[index].data = value;
 }

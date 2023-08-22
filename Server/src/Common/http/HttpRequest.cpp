@@ -34,7 +34,7 @@ namespace Http
         requestParser.put(boost::asio::buffer(content), errcode);
         if (errcode)
         {
-            Log::error("Parser http request error:{}", errcode.message());
+            Log::Error("Parser http request error:{}", errcode.message());
             return bHttp::status::internal_server_error;
         }
 

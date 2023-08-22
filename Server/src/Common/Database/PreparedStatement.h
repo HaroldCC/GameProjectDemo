@@ -13,7 +13,7 @@
 #include <variant>
 #include <concepts>
 
-struct PrepareStatementData
+struct PreparedStatementData
 {
     std::variant<bool,
                  uint8_t,
@@ -28,7 +28,7 @@ struct PrepareStatementData
                  std::string_view,
                  std::vector<uint8_t>,
                  std::nullptr_t>
-        _data;
+        data;
 
     template <typename T>
         requires std::is_standard_layout_v<T> && std::is_trivial_v<T>
@@ -45,6 +45,21 @@ struct PrepareStatementData
     constexpr static std::string ToString(std::nullptr_t)
     {
         return "NULL";
+    }
+
+    constexpr static std::string ToString(bool value)
+    {
+        return ToString<uint8_t>(value);
+    }
+
+    // constexpr static std::string ToString(const std::string &value)
+    // {
+    //     return value;
+    // }
+
+    constexpr static std::string ToString(std::string_view value)
+    {
+        return value.data();
     }
 };
 
@@ -67,14 +82,14 @@ public:
         return _preparedStatementIndex;
     }
 
-    [[nodiscard]] const std::vector<PrepareStatementData> &GetParameters() const
+    [[nodiscard]] const std::vector<PreparedStatementData> &GetParameters() const
     {
         return _statementData;
     }
 
 private:
-    uint32_t                          _preparedStatementIndex; // 预处理语句索引
-    std::vector<PrepareStatementData> _statementData;
+    uint32_t                           _preparedStatementIndex; // 预处理语句索引
+    std::vector<PreparedStatementData> _statementData;
 };
 
 template <typename ConnectionType>
