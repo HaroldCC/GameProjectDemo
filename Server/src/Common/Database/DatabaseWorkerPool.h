@@ -12,6 +12,10 @@
 #include <array>
 #include <memory>
 #include "QueryResult.h"
+#include "threading/ProducerConsumerQueue.hpp"
+
+class SQLOperation;
+struct MySqlConnectionInfo;
 
 template <typename ConnectionType>
 class PreparedStatement;
@@ -36,7 +40,7 @@ public:
     DatabaseWorkerPool &operator=(const DatabaseWorkerPool &) = delete;
     DatabaseWorkerPool &operator=(DatabaseWorkerPool &&)      = delete;
 
-    uint32_t Open();
+    uint32_t Open(const MySqlConnectionInfo &info, uint8_t syncThreadCount, uint8_t asyncThreadCount);
     void     Close();
 
     bool PrepareStatements();
@@ -47,16 +51,23 @@ public:
     void SyncExecute(std::string_view sql);
     void SyncExecute(PreparedStatement<ConnectionType> *pStmt);
 
-    ResultSet         AsyncQuery(std::string_view sql);
-    PreparedResultSet AsyncQuery(PreparedStatement<ConnectionType> *pStmt);
+    QueryCallBack AsyncQuery(std::string_view sql);
+    QueryCallBack AsyncQuery(PreparedStatement<ConnectionType> *pStmt);
 
-    ResultSet         SyncQuery(std::string_view sql, ConnectionType *pConnection = nullptr);
+    ResultSet         SyncQuery(std::string_view sql);
     PreparedResultSet SyncQuery(PreparedStatement<ConnectionType> *pStmt);
 
 private:
+    uint32_t        OpenConnections(EConnectionTypeIndex connType, uint8_t connectionCount);
     ConnectionType *GetFreeConnection();
 
 private:
     using ConnectionPtr = std::unique_ptr<ConnectionType>;
     std::array<std::vector<ConnectionPtr>, EConnectionTypeIndex_Max> _connections;
+
+    std::unique_ptr<ProducerConsumerQueue<SQLOperation *>> _queue;                  // 与异步线程（async worker）共享
+    std::unique_ptr<MySqlConnectionInfo>                   _pConnectionInfo;
+    std::vector<uint8_t>                                   _preparedStmtParamCount; // 记录每个预处理语句参数数量
+    uint8_t                                                _asyncThreadCount;
+    uint8_t                                                _syncThreadCount;
 };

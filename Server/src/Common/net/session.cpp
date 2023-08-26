@@ -210,7 +210,7 @@ namespace net
                                     //                          return;
                                     //                      }
                         )";
-            SendMessage(response.size(), response);
+            SendMessage((uint32_t)response.size(), response);
         }
     }
 

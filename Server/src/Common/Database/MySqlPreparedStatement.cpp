@@ -80,18 +80,18 @@ struct MysqlType<double>
 };
 
 MySqlPreparedStatement::MySqlPreparedStatement(MySqlStmt *pMySqlStmt, std::string_view sqlString)
-    : _pStmt(nullptr),
-      _pMySqlStmt(pMySqlStmt),
-      _pBind(new MySqlBind[_paramCount]),
-      _sqlString(sqlString),
+    : _pMySqlStmt(pMySqlStmt),
+      _pStmt(nullptr),
       _paramCount(mysql_stmt_param_count(pMySqlStmt)),
-      _paramAssignFlag(_paramCount)
+      _paramAssignFlag(_paramCount),
+      _pBind(new MySqlBind[_paramCount]),
+      _sqlString(sqlString)
 {
     _paramAssignFlag.assign(_paramCount, false);
 
     memset(_pBind, 0, sizeof(MySqlBind) * _paramCount);
 
-    MySqlBool bFlag = MySqlBool(1);
+    MySqlBool bFlag = true;
     // 设置在执行mysql_stmt_store_result时计算MYSQL_FIELD->max_length的值
     mysql_stmt_attr_set(_pMySqlStmt, STMT_ATTR_UPDATE_MAX_LENGTH, &bFlag);
 }
@@ -173,7 +173,7 @@ void MySqlPreparedStatement::SetParameter(uint8_t index, std::string_view str)
     AssertValidIndex(index);
     _paramAssignFlag[index] = true;
     MySqlBind *pParam       = &_pBind[index];
-    uint32_t   length       = str.size();
+    uint32_t   length       = (uint32_t)str.size();
     pParam->buffer_type     = MYSQL_TYPE_VAR_STRING;
     delete[] static_cast<char *>(pParam->buffer);
     pParam->buffer        = new char[length];
@@ -187,6 +187,19 @@ void MySqlPreparedStatement::SetParameter(uint8_t index, std::string_view str)
 
 void MySqlPreparedStatement::SetParameter(uint8_t index, const std::vector<uint8_t> &value)
 {
+    AssertValidIndex(index);
+    _paramAssignFlag[index] = true;
+    MySqlBind *pParam       = &_pBind[index];
+    uint32_t   length       = (uint32_t)value.size();
+    pParam->buffer_type     = MYSQL_TYPE_BLOB;
+    delete[] static_cast<char *>(pParam->buffer);
+    pParam->buffer        = new char[length];
+    pParam->buffer_length = length;
+    pParam->is_null_value = false;
+    delete pParam->length;
+    pParam->length = new unsigned long(length);
+
+    memcpy(pParam->buffer, value.data(), length);
 }
 
 void MySqlPreparedStatement::AssertValidIndex(uint8_t index)

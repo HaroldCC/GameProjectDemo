@@ -43,6 +43,6 @@ namespace Http
         }
 
         std::string_view response = _rep.GetPayload();
-        SendMessage(response.size(), response.data());
+        SendMessage((uint32_t)response.size(), response.data());
     }
 } // namespace Http

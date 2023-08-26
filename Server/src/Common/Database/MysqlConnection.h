@@ -45,6 +45,7 @@ public:
     explicit IMySqlConnection(const MySqlConnectionInfo &connInfo);
     IMySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, const MySqlConnectionInfo &connInfo);
     virtual ~IMySqlConnection();
+
     IMySqlConnection(const IMySqlConnection &)            = delete;
     IMySqlConnection &operator=(const IMySqlConnection &) = delete;
     IMySqlConnection(IMySqlConnection &&)                 = delete;
@@ -97,16 +98,19 @@ public:
     uint32_t GetLastError();
 
 protected:
-    virtual void DoPrepareStatements() = 0;
-    void         PrepareStatement(uint32_t index, std::string_view sql, ConnectionType ConnType);
+    virtual void            DoPrepareStatements() = 0;
+    void                    PrepareStatement(uint32_t index, std::string_view sql, ConnectionType connType);
+    MySqlPreparedStatement *GetPrepareStatement(uint32_t index);
 
     bool TryLock();
     void UnLock();
     bool HandleMysqlErrcode(uint32_t errcode, uint8_t tryReconnectTimes = 5);
+
     bool Query(std::string_view sql, MySqlResult *&pResult, MySqlField *&pFields,
-               uint64_t *pRowCount, uint32_t *pFieldCount);
-    bool Query(PreparedStatementBase *stmt, MySqlResult *&pResult, MySqlField *&pFields,
-               uint64_t *pRowCount, uint32_t *pFieldCount);
+               uint64_t &rowCount, uint32_t &fieldCount);
+    bool Query(PreparedStatementBase *stmt, MySqlPreparedStatement *&pMySqlPreparedStmt,
+               MySqlResult *&pResult,
+               uint64_t &rowCount, uint32_t &fieldCount);
 
 protected:
     MySqlConnectionInfo                                  _connectionInfo;

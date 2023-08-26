@@ -16,6 +16,9 @@ class PreparedStatementBase;
 
 class MySqlPreparedStatement
 {
+    friend class IMySqlConnection;
+    friend class PreparedStatementBase;
+
 public:
     MySqlPreparedStatement(MySqlStmt *pMySqlStmt, std::string_view sqlString);
     ~MySqlPreparedStatement();

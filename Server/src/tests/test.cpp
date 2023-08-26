@@ -13,6 +13,7 @@
 #include "boost/beast.hpp"
 #include "mysql.h"
 #include "Common/threading/ProducerConsumerQueue.hpp"
+#include "Common/include/Assert.h"
 
 namespace http = boost::beast::http;
 
@@ -132,7 +133,7 @@ private:
 
 void TestBoostBeastHttpParser()
 {
-    Timer timer;
+    Util::Timer timer;
     // for (int i = 1; i < 100; ++i)
     // {
     std::string httpRequest = "GET /index.html HTTP/1.1\r\n"
@@ -174,7 +175,7 @@ void TestBoostBeastHttpParser()
 
 void TestHttpParser()
 {
-    Timer timer;
+    Util::Timer timer;
     for (int i = 1; i < 100; ++i)
     {
         std::string       httpRequest = "GET /index.html HTTP/1.1\r\n"
@@ -316,7 +317,7 @@ int main(int argc, char **argv)
 
     auto testMapJoinKey = []()
     {
-        Timer                                     timer;
+        Util::Timer                               timer;
         std::unordered_map<std::string_view, int> map;
         for (int i = 0; i < 10000; ++i)
         {
@@ -329,7 +330,7 @@ int main(int argc, char **argv)
 
     auto testMapMap = []()
     {
-        Timer                                                                           timer;
+        Util::Timer                                                                     timer;
         std::unordered_map<std::string_view, std::unordered_map<std::string_view, int>> map;
         for (int i = 0; i < 10000; ++i)
         {
@@ -345,9 +346,9 @@ int main(int argc, char **argv)
 
     Log::Debug("-----------------------test base64-------------");
 
-    testMysql();
+    // testMysql();
 
-    Timer timer;
+    Util::Timer timer;
     std::this_thread::sleep_for(2s);
     Log::Debug("micro:{}, milisec:{}, sec:{}", timer.ElapsedMicrosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
 
@@ -480,7 +481,10 @@ int main(int argc, char **argv)
     queueA.pop();
 
     Log::Debug("--------------------------------测试enum class 自动转换------------------------");
-    testMysql();
+    // testMysql();
+    Assert(pB == nullptr);
+    Assert(pB == nullptr, "pB不为空指针");
+    Assert(false, std::format("the answer is {}", 42));
 
     return 0;
 }

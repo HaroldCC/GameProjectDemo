@@ -11,44 +11,74 @@
 #include <iostream>
 #include <memory>
 #include <chrono>
+#include "log.hpp"
+#include "Util.hpp"
 
-class Timer
+namespace Util
 {
-
-public:
-    Timer()
+    class Timer
     {
-        Reset();
-    }
 
-    void Reset()
-    {
-        _startTimePoint = std::chrono::high_resolution_clock::now();
-    }
+    public:
+        explicit Timer(std::string_view msg = "", bool logOnDestroy = false)
+            : _msg(msg), _logOnDestroy(logOnDestroy)
+        {
+            Reset();
+        }
 
-    double ElapsedNanosec()
-    {
-        auto currentTimePoint = std::chrono::high_resolution_clock::now();
-        return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(currentTimePoint - _startTimePoint)
-            .count();
-    }
+        Timer(const Timer &)            = default;
+        Timer &operator=(const Timer &) = default;
+        Timer(Timer &&)                 = delete;
+        Timer &operator=(Timer &&)      = delete;
 
-    double ElapsedMicrosec()
-    {
-        return ElapsedNanosec() * 0.001;
-    }
+        ~Timer()
+        {
+            if (_logOnDestroy)
+            {
+                Log::Debug("{} 耗时:{} ms", _msg, ElapsedMillisec());
+            }
+        }
 
-    double ElapsedMillisec()
-    {
-        return ElapsedMicrosec() * 0.001;
-    }
+        void Reset()
+        {
+            _startTimePoint = std::chrono::high_resolution_clock::now();
+        }
 
-    double ElapsedSec()
-    {
-        return ElapsedMillisec() * 0.001;
-    }
+        double ElapsedNanosec()
+        {
+            auto currentTimePoint = std::chrono::high_resolution_clock::now();
+            return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(currentTimePoint - _startTimePoint)
+                .count();
+        }
 
-private:
-    std::chrono::time_point<std::chrono::high_resolution_clock>
-        _startTimePoint;
-};
+        double ElapsedMicrosec()
+        {
+            return ElapsedNanosec() * 0.001;
+        }
+
+        double ElapsedMillisec()
+        {
+            return ElapsedMicrosec() * 0.001;
+        }
+
+        double ElapsedSec()
+        {
+            return ElapsedMillisec() * 0.001;
+        }
+
+    private:
+        std::string_view _msg;
+        bool             _logOnDestroy;
+        std::chrono::time_point<std::chrono::high_resolution_clock>
+            _startTimePoint;
+    };
+
+} // namespace Util
+
+#if defined(PERFORMANCE_DECT)
+#define PERFORMANCE_SCOPE_LINE(msg, line) \
+    Util::Timer timer##line(msg, true)
+#define PERFORMANCE_SCOPE(msg) PERFORMANCE_SCOPE_LINE(msg, __LINE__)
+#else
+#define PERFORMANCE_SCOPE(msg)
+#endif

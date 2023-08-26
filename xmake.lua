@@ -1,6 +1,6 @@
 set_version("0.0.1", {build = "%Y%m%d%H%m"})
 
--- set_warnings("all", "error")
+set_warnings("all", "error")
 set_languages("c++20")
 
 set_targetdir("Bin/$(plat)-$(arch)-$(mode)")
@@ -11,7 +11,7 @@ set_targetdir("Bin/$(plat)-$(arch)-$(mode)")
 rule("Debug")
     on_load(function (target) 
         if is_mode("debug") then
-            target:add("defines", "DEBUG")
+            target:add("defines", "DEBUG", "PERFORMANCE_DECT")
             target:set("suffixname", "_d")
         end
 

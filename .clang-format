@@ -177,7 +177,7 @@ AllowShortFunctionsOnASingleLine: None
 # IndentCaseLabels: true
 
 # # 要使用的预处理器指令缩进样式
-# IndentPPDirectives: AfterHash
+IndentPPDirectives: BeforeHash
 
 # # 缩进宽度
 # IndentWidth: 4
@@ -324,7 +324,7 @@ AlignConsecutiveDeclarations: true
 # AlignConsecutiveBitFields: AcrossEmptyLinesAndComments
 
 # 对齐连续宏定义的风格
-AlignConsecutiveMacros: Consecutive #clang-format 12
+AlignConsecutiveMacros: AcrossEmptyLines #clang-format 12
 
 # 用于在使用反斜杠换行中对齐反斜杠的选项
 AlignEscapedNewlines: Left

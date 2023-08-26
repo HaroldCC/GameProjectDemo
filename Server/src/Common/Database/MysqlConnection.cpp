@@ -14,25 +14,27 @@
 #include "DatabaseWorker.h"
 #include "PreparedStatement.h"
 #include "MySqlPreparedStatement.h"
+#include "Common/include/Assert.h"
+#include "QueryResult.h"
 
 using namespace std::literals::chrono_literals;
 
 IMySqlConnection::IMySqlConnection(const MySqlConnectionInfo &connInfo)
     : _connectionInfo(connInfo),
-      _mysql(nullptr),
       _reconnecting(false),
       _prepareError(false),
       _connectType(ConnectionType::SYNC),
+      _mysql(nullptr),
       _queue(nullptr)
 {
 }
 
 IMySqlConnection::IMySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, const MySqlConnectionInfo &connInfo)
     : _connectionInfo(connInfo),
-      _mysql(nullptr),
       _reconnecting(false),
       _prepareError(false),
       _connectType(ConnectionType::ASYNC),
+      _mysql(nullptr),
       _queue(queue)
 {
     _worker = std::make_unique<DatabaseWorker>(queue, this);
@@ -113,7 +115,7 @@ bool IMySqlConnection::Execute(std::string_view sql)
     }
 
     {
-        Timer timer;
+        Util::Timer timer;
         if (0 != mysql_query(_mysql, sql.data()))
         {
             uint32_t errcode = mysql_errno(_mysql);
@@ -141,14 +143,167 @@ bool IMySqlConnection::Execute(std::string_view sql)
  * @param stmt 预处理语句
  * @return bool 执行是否成功
  */
-bool IMySqlConnection::Execute(PreparedStatementBase *stmt)
+bool IMySqlConnection::Execute(PreparedStatementBase *pStmt)
 {
     if (nullptr == _mysql)
     {
         return false;
     }
 
-    uint32_t index = stmt->GetIndex();
+    uint32_t                index              = pStmt->GetIndex();
+    MySqlPreparedStatement *pMySqlPreparedStmt = GetPrepareStatement(index);
+    Assert(nullptr != pMySqlPreparedStmt, std::format("索引为{}的预处理语句未成功加载，请排查原因", index));
+
+    pMySqlPreparedStmt->BindParameters(pStmt);
+    MySqlStmt *pMySqlStmt = pMySqlPreparedStmt->GetMySqlStmt();
+    MySqlBind *pMysqlBind = pMySqlPreparedStmt->GetMySqlBind();
+
+    {
+        PERFORMANCE_SCOPE(std::format("执行Sql语句：[{}]", pMySqlPreparedStmt->GetSqlString()));
+
+        if (mysql_stmt_bind_param(pMySqlStmt, pMysqlBind))
+        {
+            uint32_t errcode = mysql_errno(_mysql);
+            Log::Debug("sql:[{}], 绑定参数错误：{}:{}",
+                       pMySqlPreparedStmt->GetSqlString(), errcode, mysql_stmt_errno(pMySqlStmt));
+
+            if (HandleMysqlErrcode(errcode))
+            {
+                // 处理错误成功，则继续执行
+                return Execute(pStmt);
+            }
+
+            pMySqlPreparedStmt->ClearParameters();
+            return false;
+        }
+
+        if (0 != mysql_stmt_execute(pMySqlStmt))
+        {
+            uint32_t errcode = mysql_errno(_mysql);
+            Log::Error("执行Sql语句：[{}] 出错：{}:{}",
+                       pMySqlPreparedStmt->GetSqlString(), errcode, mysql_stmt_error(pMySqlStmt));
+
+            if (HandleMysqlErrcode(errcode))
+            {
+                // 处理错误成功，继续执行
+                return Execute(pStmt);
+            }
+
+            pMySqlPreparedStmt->ClearParameters();
+            return false;
+        }
+    }
+
+    pMySqlPreparedStmt->ClearParameters();
+    return true;
+}
+
+uint32_t IMySqlConnection::GetLastError()
+{
+    return mysql_errno(_mysql);
+}
+
+void IMySqlConnection::PrepareStatement(uint32_t index, std::string_view sql, ConnectionType connType)
+{
+    // 判断要加载的预处理语句是否与当前连接的类型一致
+    if (!(Util::ToUnderlying(_connectType) & Util::ToUnderlying(connType)))
+    {
+        _stmts[index].reset();
+        return;
+    }
+
+    MySqlStmt *pStmt = mysql_stmt_init(_mysql);
+    if (nullptr == pStmt)
+    {
+        Log::Error("初始化预处理语句：{}:{} 错误：{}", index, sql, mysql_error(_mysql));
+        _prepareError = true;
+    }
+    else
+    {
+        if (0 != mysql_stmt_prepare(pStmt, sql.data(), static_cast<uint32_t>(sql.size())))
+        {
+            Log::Error("处理预处理语句：{}:{} 错误：{}", index, sql, mysql_stmt_error(pStmt));
+            mysql_stmt_close(pStmt);
+            _prepareError = true;
+        }
+        else
+        {
+            _stmts[index] = std::make_unique<MySqlPreparedStatement>(pStmt, sql);
+        }
+    }
+}
+
+MySqlPreparedStatement *IMySqlConnection::GetPrepareStatement(uint32_t index)
+{
+    Assert(index < _stmts.size(),
+           std::format("尝试获取非法的预处理语句，索引：{} (最大索引：{}) 数据库：{}, 连接方式：{}", index, _stmts.size(),
+                       _connectionInfo._database,
+                       ((uint8_t)_connectType & (uint8_t)ConnectionType::ASYNC) ? "异步" : "同步"));
+    MySqlPreparedStatement *pMySqlPreparedStmt = _stmts[index].get();
+    if (nullptr == pMySqlPreparedStmt)
+    {
+        Log::Error("获取数据库：{} 预处理语句索引 {} 失败，连接方式：{}",
+                   _connectionInfo._database, index,
+                   (Util::ToUnderlying(_connectType) &
+                    Util::ToUnderlying(ConnectionType::ASYNC))
+                       ? "异步"
+                       : "同步");
+    }
+
+    return pMySqlPreparedStmt;
+}
+
+ResultSet *IMySqlConnection::Query(std::string_view sql)
+{
+    if (sql.empty())
+    {
+        return nullptr;
+    }
+
+    MySqlResult *pMySqlResult = nullptr;
+    MySqlField  *pFields      = nullptr;
+    uint64_t     rowCount     = 0;
+    uint32_t     fieldCount   = 0;
+    if (!Query(sql, pMySqlResult, pFields, rowCount, fieldCount))
+    {
+        return nullptr;
+    }
+
+    return new ResultSet(pMySqlResult, pFields, rowCount, fieldCount);
+}
+
+PreparedResultSet *IMySqlConnection::Query(PreparedStatementBase *pStmt)
+{
+    MySqlPreparedStatement *pMySqlPreparedStmt = nullptr;
+    MySqlResult            *pMySqlResult       = nullptr;
+    uint64_t                rowCount           = 0;
+    uint32_t                fieldCount         = 0;
+    if (!Query(pStmt, pMySqlPreparedStmt, pMySqlResult, rowCount, fieldCount))
+    {
+        return nullptr;
+    }
+
+    if (mysql_more_results(_mysql))
+    {
+        mysql_next_result(_mysql);
+    }
+
+    return new PreparedResultSet(pMySqlPreparedStmt->GetMySqlStmt(), pMySqlResult, rowCount, fieldCount);
+}
+
+void IMySqlConnection::BeginTransaction()
+{
+    Execute("START TRANSACTION");
+}
+
+void IMySqlConnection::CommitTransaction()
+{
+    Execute("COMMIT");
+}
+
+void IMySqlConnection::RollbackTransaction()
+{
+    Execute("ROLLBACK");
 }
 
 bool IMySqlConnection::TryLock()
@@ -236,4 +391,112 @@ bool IMySqlConnection::HandleMysqlErrcode(uint32_t errcode, uint8_t tryReconnect
     }
 
     return false;
+}
+
+bool IMySqlConnection::Query(std::string_view sql, MySqlResult *&pResult, MySqlField *&pFields,
+                             uint64_t &rowCount, uint32_t &fieldCount)
+{
+    if (nullptr == _mysql)
+    {
+        return false;
+    }
+
+    {
+        PERFORMANCE_SCOPE(std::format("执行Sql语句[{}]", sql));
+
+        if (mysql_query(_mysql, sql.data()))
+        {
+            uint32_t errcode = mysql_errno(_mysql);
+            Log::Error("执行sql语句出错：{}:{}", errcode, mysql_error(_mysql));
+            if (HandleMysqlErrcode(errcode))
+            {
+                // 成功处理错误，再次执行
+                return Query(sql, pResult, pFields, rowCount, fieldCount);
+            }
+
+            return false;
+        }
+    }
+
+    pResult    = mysql_store_result(_mysql);
+    rowCount   = mysql_affected_rows(_mysql);
+    fieldCount = mysql_field_count(_mysql);
+
+    if (nullptr == pResult)
+    {
+        return false;
+    }
+
+    if (0 == rowCount)
+    {
+        mysql_free_result(pResult);
+        return false;
+    }
+
+    pFields = mysql_fetch_fields(pResult);
+
+    return true;
+}
+
+bool IMySqlConnection::Query(PreparedStatementBase *stmt, MySqlPreparedStatement *&pMySqlPreparedStmt,
+                             MySqlResult *&pResult,
+                             uint64_t &rowCount, uint32_t &fieldCount)
+{
+    if (nullptr == _mysql)
+    {
+        return false;
+    }
+
+    uint32_t index     = stmt->GetIndex();
+    pMySqlPreparedStmt = GetPrepareStatement(index);
+    Assert(nullptr != pMySqlPreparedStmt, std::format("尝试获取索引为 {} 的预处理语句错误，请排查原因", index));
+
+    pMySqlPreparedStmt->BindParameters(stmt);
+
+    MySqlStmt *pMySqlStmt = pMySqlPreparedStmt->GetMySqlStmt();
+    MySqlBind *pMySqlBind = pMySqlPreparedStmt->GetMySqlBind();
+
+    {
+        PERFORMANCE_SCOPE(std::format("执行预处理语句 [{}]", pMySqlPreparedStmt->GetSqlString()));
+
+        if (mysql_stmt_bind_param(pMySqlStmt, pMySqlBind))
+        {
+            uint32_t errcode = mysql_errno(_mysql);
+            Log::Error("预处理语句:[{}] 绑定参数出错：{}:{}", pMySqlPreparedStmt->GetSqlString(),
+                       errcode, mysql_stmt_error(pMySqlStmt));
+
+            // 成功处理错误，再次尝试执行
+            if (HandleMysqlErrcode(errcode))
+            {
+                return Query(stmt, pMySqlPreparedStmt, pResult, rowCount, fieldCount);
+            }
+
+            pMySqlPreparedStmt->ClearParameters();
+            return false;
+        }
+
+        if (0 != mysql_stmt_execute(pMySqlStmt))
+        {
+            uint32_t errcode = mysql_errno(_mysql);
+            Log::Error("执行预处理语句:[{}] 绑定参数出错：{}:{}", pMySqlPreparedStmt->GetSqlString(),
+                       errcode, mysql_stmt_error(pMySqlStmt));
+
+            // 成功处理错误，再次尝试执行
+            if (HandleMysqlErrcode(errcode))
+            {
+                return Query(stmt, pMySqlPreparedStmt, pResult, rowCount, fieldCount);
+            }
+
+            pMySqlPreparedStmt->ClearParameters();
+            return false;
+        }
+    }
+
+    pMySqlPreparedStmt->ClearParameters();
+
+    pResult    = mysql_stmt_result_metadata(pMySqlStmt);
+    rowCount   = mysql_stmt_num_rows(pMySqlStmt);
+    fieldCount = mysql_stmt_field_count(pMySqlStmt);
+
+    return true;
 }
