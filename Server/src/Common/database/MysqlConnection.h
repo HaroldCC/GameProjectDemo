@@ -10,7 +10,7 @@
 
 #include <string_view>
 #include <mutex>
-#include "MysqlTypeDef.h"
+#include "DatabaseEnv.h"
 #include "Common/threading/ProducerConsumerQueue.hpp"
 
 enum class ConnectionType : uint8_t
@@ -81,7 +81,7 @@ public:
      * @param sql sql语句
      * @return ResultSet* 查询结果
      */
-    ResultSet *Query(std::string_view sql);
+    ResultSetPtr Query(std::string_view sql);
 
     /**
      * @brief 执行预处理语句查询
@@ -89,7 +89,7 @@ public:
      * @param stmt 预处理语句
      * @return PreparedResultSet* 查询结果
      */
-    PreparedResultSet *Query(PreparedStatementBase *stmt);
+    PreparedResultSetPtr Query(PreparedStatementBase *stmt);
 
     void BeginTransaction();
     void CommitTransaction();

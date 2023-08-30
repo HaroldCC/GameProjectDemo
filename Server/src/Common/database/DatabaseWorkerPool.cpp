@@ -10,6 +10,7 @@
 #include "DatabaseWorkerPool.h"
 #include "Common/include/Assert.h"
 #include "MysqlConnection.h"
+#include "QueryCallBack.h"
 
 template <typename ConnectionType>
 DatabaseWorkerPool<ConnectionType>::DatabaseWorkerPool()
@@ -59,20 +60,53 @@ void DatabaseWorkerPool<ConnectionType>::Close()
 }
 
 template <typename ConnectionType>
-ResultSet DatabaseWorkerPool<ConnectionType>::AsyncQuery(std::string_view sql)
+QueryCallback DatabaseWorkerPool<ConnectionType>::AsyncQuery(std::string_view sql)
 {
     ConnectionType *pConnection = GetFreeConnection();
-
-    
 }
 
 template <typename ConnectionType>
-ResultSet DatabaseWorkerPool<ConnectionType>::SyncQuery(std::string_view sql)
+ResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(std::string_view sql)
 {
     ConnectionType *pConnection = GetFreeConnection();
+    Assert(nullptr != pConnection);
 
-    ResultSet *pResult = pConnection->Query(sql);
+    ResultSetPtr pResult = pConnection->Query(sql);
     pConnection->Unlock();
+
+    if (nullptr == pResult || 0 == pResult->GetRowCount() || !pResult->NextRow())
+    {
+        pResult.reset();
+        return pResult;
+    }
+
+    return pResult;
+}
+
+template <typename ConnectionType>
+PreparedResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(PreparedStatement<ConnectionType> *pStmt)
+{
+    ConnectionType      *pConnection = GetFreeConnection();
+    PreparedResultSetPtr pResult     = pConnection->Query(pStmt);
+    pConnection->Unlock();
+
+    // 清空代理语句内存
+    delete pStmt;
+    pStmt = nullptr;
+
+    if (nullptr == pResult || 0 == pResult->GetRowCount())
+    {
+        pResult.reset();
+        return pResult;
+    }
+
+    return pResult;
+}
+
+template <typename ConnectionType>
+void DatabaseWorkerPool<ConnectionType>::BeginTransaction()
+{
+    return std::make_shared<Transaction<ConnectionType>>();
 }
 
 template <typename ConnectionType>

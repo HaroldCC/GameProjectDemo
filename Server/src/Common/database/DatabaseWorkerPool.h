@@ -14,8 +14,11 @@
 #include "QueryResult.h"
 #include "threading/ProducerConsumerQueue.hpp"
 
-class SQLOperation;
 struct MySqlConnectionInfo;
+
+class SQLOperation;
+class QueryCallback;
+class TransactionBase;
 
 template <typename ConnectionType>
 class PreparedStatement;
@@ -51,11 +54,18 @@ public:
     void SyncExecute(std::string_view sql);
     void SyncExecute(PreparedStatement<ConnectionType> *pStmt);
 
-    QueryCallBack AsyncQuery(std::string_view sql);
-    QueryCallBack AsyncQuery(PreparedStatement<ConnectionType> *pStmt);
+    QueryCallback AsyncQuery(std::string_view sql);
+    QueryCallback AsyncQuery(PreparedStatement<ConnectionType> *pStmt);
 
-    ResultSet         SyncQuery(std::string_view sql);
-    PreparedResultSet SyncQuery(PreparedStatement<ConnectionType> *pStmt);
+    ResultSetPtr         SyncQuery(std::string_view sql);
+    PreparedResultSetPtr SyncQuery(PreparedStatement<ConnectionType> *pStmt);
+
+    void BeginTransaction();
+    void CommitTransaction();
+
+    int ExecuteTransaction(std::shared_ptr<TransactionBase> pTransaction);
+
+    [[nodiscard]] uint32_t GetLastError() const;
 
 private:
     uint32_t        OpenConnections(EConnectionTypeIndex connType, uint8_t connectionCount);

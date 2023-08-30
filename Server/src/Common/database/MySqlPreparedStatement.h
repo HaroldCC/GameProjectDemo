@@ -10,7 +10,7 @@
 
 #include <string_view>
 #include <vector>
-#include "MysqlTypeDef.h"
+#include "DatabaseEnv.h"
 
 class PreparedStatementBase;
 

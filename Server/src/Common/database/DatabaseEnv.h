@@ -1,6 +1,6 @@
 ﻿/*************************************************************************
-> File Name       : MysqlTypeDef.h
-> Brief           : Mysql别名
+> File Name       : DatabaseEnv.h
+> Brief           : 数据库声明
 > Author          : Harold
 > Mail            : 2106562095@qq.com
 > Github          : www.github.com/Haroldcc
@@ -8,6 +8,8 @@
 ************************************************************************/
 #pragma once
 
+#include <memory>
+#include <future>
 #include <type_traits>
 #include <mysql.h>
 
@@ -39,3 +41,27 @@ enum class DatabaseFieldType : uint8_t
     Date,
     Binary
 };
+
+class ResultSet;
+using ResultSetPtr = std::shared_ptr<ResultSet>;
+
+template <typename... Args>
+inline ResultSetPtr MakeResultSetPtr(Args &&...args)
+{
+    return std::make_shared<ResultSet>(std::forward<Args>(args)...);
+}
+
+using QueryResultFuture  = std::future<ResultSetPtr>;
+using QueryResultPromise = std::promise<ResultSetPtr>;
+
+class PreparedResultSet;
+using PreparedResultSetPtr = std::shared_ptr<PreparedResultSet>;
+
+template <typename... Args>
+inline PreparedResultSetPtr MakePreparedResultSetPtr(Args &&...args)
+{
+    return std::make_shared<PreparedResultSet>(std::forward<Args>(args)...);
+}
+
+using PreparedResultFuture  = std::future<PreparedResultSetPtr>;
+using PreparedResultPromise = std::promise<PreparedResultSetPtr>;

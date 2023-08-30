@@ -7,7 +7,7 @@
 > Created Time    : 2023年07月22日  17时43分32秒
 ************************************************************************/
 #pragma once
-#include "MysqlTypeDef.h"
+#include "DatabaseEnv.h"
 #include <vector>
 #include "Field.h"
 

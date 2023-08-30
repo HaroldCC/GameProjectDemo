@@ -253,7 +253,7 @@ MySqlPreparedStatement *IMySqlConnection::GetPrepareStatement(uint32_t index)
     return pMySqlPreparedStmt;
 }
 
-ResultSet *IMySqlConnection::Query(std::string_view sql)
+ResultSetPtr IMySqlConnection::Query(std::string_view sql)
 {
     if (sql.empty())
     {
@@ -269,10 +269,10 @@ ResultSet *IMySqlConnection::Query(std::string_view sql)
         return nullptr;
     }
 
-    return new ResultSet(pMySqlResult, pFields, rowCount, fieldCount);
+    return MakeResultSetPtr(pMySqlResult, pFields, rowCount, fieldCount);
 }
 
-PreparedResultSet *IMySqlConnection::Query(PreparedStatementBase *pStmt)
+PreparedResultSetPtr IMySqlConnection::Query(PreparedStatementBase *pStmt)
 {
     MySqlPreparedStatement *pMySqlPreparedStmt = nullptr;
     MySqlResult            *pMySqlResult       = nullptr;
@@ -288,7 +288,7 @@ PreparedResultSet *IMySqlConnection::Query(PreparedStatementBase *pStmt)
         mysql_next_result(_mysql);
     }
 
-    return new PreparedResultSet(pMySqlPreparedStmt->GetMySqlStmt(), pMySqlResult, rowCount, fieldCount);
+    return MakePreparedResultSetPtr(pMySqlPreparedStmt->GetMySqlStmt(), pMySqlResult, rowCount, fieldCount);
 }
 
 void IMySqlConnection::BeginTransaction()
