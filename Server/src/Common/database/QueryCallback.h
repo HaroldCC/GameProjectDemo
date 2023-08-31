@@ -16,10 +16,10 @@ class QueryCallback
 public:
     explicit QueryCallback(QueryResultFuture &&result);
     explicit QueryCallback(PreparedResultFuture &&result);
+    ~QueryCallback() = default;
 
     QueryCallback(QueryCallback &&right) noexcept;
     QueryCallback &operator=(QueryCallback &&right) noexcept;
-    ~QueryCallback() = default;
 
     QueryCallback &&Then(std::function<void(ResultSetPtr)> &&callback);
     QueryCallback &&Then(std::function<void(PreparedResultSetPtr)> &&callback);
@@ -34,12 +34,8 @@ private:
      * @brief 有两种查询，一种是直接执行sql语句的查询，
      *        一种是预处理语句查询，相应的，返回就有两种
      */
-    union
-    {
-        QueryResultFuture    _future;
-        PreparedResultFuture _preparedFuture;
-    };
-    bool _isPreparedResult; // 是否预处理查询结果
+    std::variant<QueryResultFuture, PreparedResultFuture> _future;
+    bool                                                  _isPreparedResult; // 是否预处理查询结果
 
     // for Then
     struct QueryCallbackData
@@ -48,12 +44,10 @@ private:
          * @brief 有两种查询，一种是直接执行sql语句的查询，
          *        一种是预处理语句查询，相应的，返回就有两种
          */
-        union
-        {
-            std::function<void(ResultSetPtr)>         _callback;
-            std::function<void(PreparedResultSetPtr)> _preparedCallback;
-        };
-        bool _isPreparedResult; // 是否预处理查询结果
+        using ResultSetCallback         = std::function<void(ResultSetPtr)>;
+        using PreparedResultSetCallback = std::function<void(PreparedResultSetPtr)>;
+        std::variant<ResultSetCallback, PreparedResultSetCallback> _callback;
+        bool                                                       _isPreparedResult; // 是否预处理查询结果
 
         explicit QueryCallbackData(std::function<void(ResultSetPtr)> &&callback)
             : _callback(std::move(callback)), _isPreparedResult(false)
@@ -61,7 +55,7 @@ private:
         }
 
         explicit QueryCallbackData(std::function<void(PreparedResultSetPtr)> &&callback)
-            : _preparedCallback(std::move(callback)), _isPreparedResult(true)
+            : _callback(std::move(callback)), _isPreparedResult(true)
         {
         }
     };

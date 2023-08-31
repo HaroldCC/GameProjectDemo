@@ -106,7 +106,7 @@ PreparedResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(PreparedState
 template <typename ConnectionType>
 void DatabaseWorkerPool<ConnectionType>::BeginTransaction()
 {
-    return std::make_shared<Transaction<ConnectionType>>();
+    // return std::make_shared<Transaction<ConnectionType>>();
 }
 
 template <typename ConnectionType>

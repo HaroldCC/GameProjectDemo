@@ -16,7 +16,7 @@ QueryCallback::QueryCallback(QueryResultFuture &&result)
 }
 
 QueryCallback::QueryCallback(PreparedResultFuture &&result)
-    : _preparedFuture(std::move(result)), _isPreparedResult(true)
+    : _future(std::move(result)), _isPreparedResult(true)
 {
 }
 
@@ -52,23 +52,56 @@ QueryCallback &&QueryCallback::Then(std::function<void(PreparedResultSetPtr)> &&
 
 bool QueryCallback::InvokeIfReady()
 {
-    QueryCallbackData &callback = _callbacks.front();
+    QueryCallbackData &callback                    = _callbacks.front();
+    auto               checkStateAndReturnComplete = [this]()
+    {
+        _callbacks.pop();
+        bool bFinish = std::visit([](auto &&future) -> bool
+                                  { return future.valid(); },
+                                  _future);
+        if (_callbacks.empty())
+        {
+            Assert(!bFinish);
+            return true;
+        }
+
+        return false;
+    };
+
     if (_isPreparedResult)
     {
-        if (_future.valid() && _future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+        QueryResultFuture *pFuture = std::get_if<QueryResultFuture>(&_future);
+        Assert(nullptr != pFuture);
+
+        if (pFuture->valid() && pFuture->wait_for(std::chrono::seconds(0)) == std::future_status::ready)
         {
-            QueryResultFuture                 future(std::move(_future));
-            std::function<void(ResultSetPtr)> callbackFunc(std::move(callback._callback));
+            QueryResultFuture                     future(std::move(*pFuture));
+            QueryCallbackData::ResultSetCallback *pCallback =
+                std::get_if<QueryCallbackData::ResultSetCallback>(&callback._callback);
+            Assert(nullptr != pCallback);
+
+            std::function<void(ResultSetPtr)> callbackFunc(std::move(*pCallback));
             callbackFunc(future.get());
+
+            return checkStateAndReturnComplete();
         }
     }
     else
     {
-        if (_preparedFuture.valid() && _preparedFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+        PreparedResultFuture *pFuture = std::get_if<PreparedResultFuture>(&_future);
+        Assert(nullptr != pFuture);
+
+        if (pFuture->valid() && pFuture->wait_for(std::chrono::seconds(0)) == std::future_status::ready)
         {
-            PreparedResultFuture                      future(std::move(_preparedFuture));
-            std::function<void(PreparedResultSetPtr)> callbackFunc(std::move(callback._preparedCallback));
+            PreparedResultFuture                          future(std::move(*pFuture));
+            QueryCallbackData::PreparedResultSetCallback *pCallback =
+                std::get_if<QueryCallbackData::PreparedResultSetCallback>(&callback._callback);
+            Assert(nullptr != pCallback);
+
+            std::function<void(PreparedResultSetPtr)> callbackFunc(std::move(*pCallback));
             callbackFunc(future.get());
+
+            return checkStateAndReturnComplete();
         }
     }
 
