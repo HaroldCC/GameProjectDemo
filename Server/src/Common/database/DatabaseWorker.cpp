@@ -9,9 +9,9 @@
 #include "pch.h"
 #include <memory>
 #include "DatabaseWorker.h"
-#include "SqlOperation.h"
+#include "SqlTask.h"
 
-DatabaseWorker::DatabaseWorker(ProducerConsumerQueue<SQLOperation *> *queue, IMySqlConnection *sqlConn)
+DatabaseWorker::DatabaseWorker(ProducerConsumerQueue<ISqlTask *> *queue, IMySqlConnection *sqlConn)
     : _queue(queue), _sqlConn(sqlConn), _canceling(false)
 {
     _workerThread = std::thread(&DatabaseWorker::WorkThread, this);
@@ -36,7 +36,7 @@ void DatabaseWorker::WorkThread()
 
     while (true)
     {
-        std::unique_ptr<SQLOperation> operation(_queue->WaitAndPop());
+        std::unique_ptr<ISqlTask> operation(_queue->WaitAndPop());
         if (_canceling || nullptr == operation)
         {
             return;

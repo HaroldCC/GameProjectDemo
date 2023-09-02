@@ -482,9 +482,12 @@ int main(int argc, char **argv)
 
     Log::Debug("--------------------------------测试enum class 自动转换------------------------");
     // testMysql();
-    Assert(pB == nullptr);
-    Assert(pB == nullptr, "pB不为空指针");
-    Assert(false, std::format("the answer is {}", 42));
+    std::string_view strView;
+    {
+        std::string_view strTmp = "this is a string\0 hello world";
+        strView                 = std::move(strTmp);
+    }
+    Log::Debug("{}", strView);
 
     return 0;
 }

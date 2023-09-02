@@ -412,37 +412,37 @@ namespace Log
     template <typename... Args>
     void Tracy(FormatWithLocation fmt, Args &&...args)
     {
-        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::trace, fmt.format, std::forward<Args>(args)...);
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::trace, fmt::runtime(fmt.format), std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Debug(FormatWithLocation fmt, Args &&...args)
     {
-        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::debug, fmt.format, std::forward<Args>(args)...);
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::debug, fmt::runtime(fmt.format), std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Info(FormatWithLocation fmt, Args &&...args)
     {
-        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::info, fmt.format, std::forward<Args>(args)...);
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::info, fmt::runtime(fmt.format), std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Warn(FormatWithLocation fmt, Args &&...args)
     {
-        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::warn, fmt.format, std::forward<Args>(args)...);
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::warn, fmt::runtime(fmt.format), std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Error(FormatWithLocation fmt, Args &&...args)
     {
-        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::err, fmt.format, std::forward<Args>(args)...);
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::err, fmt::runtime(fmt.format), std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void Critical(FormatWithLocation fmt, Args &&...args)
     {
-        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::critical, fmt.format, std::forward<Args>(args)...);
+        spdlog::log(GetLogSourceLocation(fmt.location), spdlog::level::critical, fmt::runtime(fmt.format), std::forward<Args>(args)...);
     }
 #endif
 } // namespace Log

@@ -29,7 +29,7 @@ IMySqlConnection::IMySqlConnection(const MySqlConnectionInfo &connInfo)
 {
 }
 
-IMySqlConnection::IMySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, const MySqlConnectionInfo &connInfo)
+IMySqlConnection::IMySqlConnection(ProducerConsumerQueue<ISqlTask *> *queue, const MySqlConnectionInfo &connInfo)
     : _connectionInfo(connInfo),
       _reconnecting(false),
       _prepareError(false),
@@ -499,4 +499,9 @@ bool IMySqlConnection::Query(PreparedStatementBase *stmt, MySqlPreparedStatement
     fieldCount = mysql_stmt_field_count(pMySqlStmt);
 
     return true;
+}
+
+void IMySqlConnection::Ping() const
+{
+    mysql_ping(_mysql);
 }

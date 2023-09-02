@@ -9,13 +9,13 @@
 #pragma once
 #include "Common/threading/ProducerConsumerQueue.hpp"
 
-class SQLOperation;
+class ISqlTask;
 class IMySqlConnection;
 
 class DatabaseWorker
 {
 public:
-    DatabaseWorker(ProducerConsumerQueue<SQLOperation *> *queue, IMySqlConnection *sqlConn);
+    DatabaseWorker(ProducerConsumerQueue<ISqlTask *> *queue, IMySqlConnection *sqlConn);
     ~DatabaseWorker();
     DatabaseWorker(const DatabaseWorker &)            = delete;
     DatabaseWorker(DatabaseWorker &&)                 = delete;
@@ -26,8 +26,8 @@ private:
     void WorkThread();
 
 private:
-    IMySqlConnection                      *_sqlConn;
-    ProducerConsumerQueue<SQLOperation *> *_queue;
-    std::thread                            _workerThread;
-    std::atomic_bool                       _canceling;
+    IMySqlConnection                  *_sqlConn;
+    ProducerConsumerQueue<ISqlTask *> *_queue;
+    std::thread                        _workerThread;
+    std::atomic_bool                   _canceling;
 };

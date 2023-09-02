@@ -11,10 +11,12 @@
 #include "Common/include/Assert.h"
 #include "MysqlConnection.h"
 #include "QueryCallBack.h"
+#include "SqlTask.h"
+#include "QueryCallback.h"
 
 template <typename ConnectionType>
 DatabaseWorkerPool<ConnectionType>::DatabaseWorkerPool()
-    : _queue(new ProducerConsumerQueue<SQLOperation *>()),
+    : _queue(new ProducerConsumerQueue<ISqlTask *>()),
       _asyncThreadCount(0), _syncThreadCount(0)
 {
     Assert(mysql_thread_safe(), "数据库不是线程安全的");
@@ -62,7 +64,10 @@ void DatabaseWorkerPool<ConnectionType>::Close()
 template <typename ConnectionType>
 QueryCallback DatabaseWorkerPool<ConnectionType>::AsyncQuery(std::string_view sql)
 {
-    ConnectionType *pConnection = GetFreeConnection();
+    ADHOCQueryTask   *pTask        = new ADHOCQueryTask(sql, true);
+    QueryResultFuture resultFuture = pTask->GetFuture();
+    _queue->Push(pTask);
+    return QueryCallback(resultFuture);
 }
 
 template <typename ConnectionType>

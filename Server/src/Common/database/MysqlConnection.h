@@ -29,7 +29,7 @@ struct MySqlConnectionInfo
     std::string_view _port;
 };
 
-class SQLOperation;
+class ISqlTask;
 class DatabaseWorker;
 class PreparedStatementBase;
 class ResultSet;
@@ -43,7 +43,7 @@ class IMySqlConnection
 
 public:
     explicit IMySqlConnection(const MySqlConnectionInfo &connInfo);
-    IMySqlConnection(ProducerConsumerQueue<SQLOperation *> *queue, const MySqlConnectionInfo &connInfo);
+    IMySqlConnection(ProducerConsumerQueue<ISqlTask *> *queue, const MySqlConnectionInfo &connInfo);
     virtual ~IMySqlConnection();
 
     IMySqlConnection(const IMySqlConnection &)            = delete;
@@ -97,6 +97,8 @@ public:
 
     uint32_t GetLastError();
 
+    void Ping() const;
+
 protected:
     virtual void            DoPrepareStatements() = 0;
     void                    PrepareStatement(uint32_t index, std::string_view sql, ConnectionType connType);
@@ -120,8 +122,8 @@ protected:
     std::vector<std::unique_ptr<MySqlPreparedStatement>> _stmts;
 
 private:
-    MySqlHandle                           *_mysql;
-    std::mutex                             _mutex;
-    std::unique_ptr<DatabaseWorker>        _worker;
-    ProducerConsumerQueue<SQLOperation *> *_queue;
+    MySqlHandle                       *_mysql;
+    std::mutex                         _mutex;
+    std::unique_ptr<DatabaseWorker>    _worker;
+    ProducerConsumerQueue<ISqlTask *> *_queue;
 };
