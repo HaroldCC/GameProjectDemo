@@ -65,3 +65,9 @@ inline PreparedResultSetPtr MakePreparedResultSetPtr(Args &&...args)
 
 using PreparedResultFuture  = std::future<PreparedResultSetPtr>;
 using PreparedResultPromise = std::promise<PreparedResultSetPtr>;
+
+template <typename ConnectionType>
+class Transaction;
+
+template <typename ConnectionType>
+using TransactionPtr = std::shared_ptr<Transaction<ConnectionType>>;

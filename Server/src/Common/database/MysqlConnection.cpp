@@ -16,6 +16,7 @@
 #include "MySqlPreparedStatement.h"
 #include "Common/include/Assert.h"
 #include "QueryResult.h"
+#include "Transaction.h"
 
 using namespace std::literals::chrono_literals;
 
@@ -304,6 +305,47 @@ void IMySqlConnection::CommitTransaction()
 void IMySqlConnection::RollbackTransaction()
 {
     Execute("ROLLBACK");
+}
+
+uint32_t IMySqlConnection::ExecuteTransaction(const std::shared_ptr<TransactionBase> &pTransaction)
+{
+    const std::vector<TransactionBase::SqlElementData> &queries = pTransaction->_queries;
+    if (queries.empty())
+    {
+        return -1;
+    }
+
+    BeginTransaction();
+
+    for (const auto &query : queries)
+    {
+        if (std::holds_alternative<PreparedStatementBase *>(query))
+        {
+            PreparedStatementBase *pStmt = std::get<PreparedStatementBase *>(query);
+            Assert(nullptr != pStmt);
+            if (!Execute(pStmt))
+            {
+                Log::Warn("执行事务失败，即将回滚，事务队列数量{}", queries.size());
+                RollbackTransaction();
+
+                return GetLastError();
+            }
+        }
+        else
+        {
+            std::string_view sql = std::get<std::string_view>(query);
+            if (!Execute(sql))
+            {
+                Log::Warn("执行事务失败，即将回滚，事务队列数量{}", queries.size());
+                RollbackTransaction();
+                return GetLastError();
+            }
+        }
+    }
+
+    CommitTransaction();
+
+    return 0;
 }
 
 bool IMySqlConnection::TryLock()

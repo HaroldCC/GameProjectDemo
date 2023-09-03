@@ -12,7 +12,7 @@
 #include "MysqlConnection.h"
 #include "QueryCallBack.h"
 #include "SqlTask.h"
-#include "QueryCallback.h"
+#include "Transaction.h"
 
 template <typename ConnectionType>
 DatabaseWorkerPool<ConnectionType>::DatabaseWorkerPool()
@@ -67,7 +67,16 @@ QueryCallback DatabaseWorkerPool<ConnectionType>::AsyncQuery(std::string_view sq
     ADHOCQueryTask   *pTask        = new ADHOCQueryTask(sql, true);
     QueryResultFuture resultFuture = pTask->GetFuture();
     _queue->Push(pTask);
-    return QueryCallback(resultFuture);
+    return QueryCallback(std::move(resultFuture));
+}
+
+template <typename ConnectionType>
+QueryCallback DatabaseWorkerPool<ConnectionType>::AsyncQuery(PreparedStatement<ConnectionType> *pStmt)
+{
+    PreparedQueryTask   *pTask        = new PreparedQueryTask(pStmt, true);
+    PreparedResultFuture resultFuture = pTask->GetFuture();
+    _queue->Push(pTask);
+    return QueryCallback(std::move(resultFuture));
 }
 
 template <typename ConnectionType>
@@ -111,7 +120,13 @@ PreparedResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(PreparedState
 template <typename ConnectionType>
 void DatabaseWorkerPool<ConnectionType>::BeginTransaction()
 {
-    // return std::make_shared<Transaction<ConnectionType>>();
+    return std::make_shared<Transaction<ConnectionType>>();
+}
+
+template <typename ConnectionType>
+void DatabaseWorkerPool<ConnectionType>::CommitTransaction(TransactionPtr<ConnectionType> pTransaction)
+{
+    _queue->Push(new TransactionTask(pTransaction));
 }
 
 template <typename ConnectionType>

@@ -64,16 +64,16 @@ private:
 };
 
 // 预处理语句查询任务
-class IPreparedQueryTask final : public ISqlTask
+class PreparedQueryTask final : public ISqlTask
 {
 public:
-    explicit IPreparedQueryTask(PreparedStatementBase *pStmt, bool async = false);
-    ~IPreparedQueryTask() override;
+    explicit PreparedQueryTask(PreparedStatementBase *pStmt, bool async = false);
+    ~PreparedQueryTask() override;
 
-    IPreparedQueryTask(const IPreparedQueryTask &)            = delete;
-    IPreparedQueryTask(IPreparedQueryTask &&)                 = delete;
-    IPreparedQueryTask &operator=(const IPreparedQueryTask &) = delete;
-    IPreparedQueryTask &operator=(IPreparedQueryTask &&)      = delete;
+    PreparedQueryTask(const PreparedQueryTask &)            = delete;
+    PreparedQueryTask(PreparedQueryTask &&)                 = delete;
+    PreparedQueryTask &operator=(const PreparedQueryTask &) = delete;
+    PreparedQueryTask &operator=(PreparedQueryTask &&)      = delete;
 
     bool                               Execute() override;
     [[nodiscard]] PreparedResultFuture GetFuture() const;
@@ -85,10 +85,23 @@ private:
 };
 
 // 数据库事务执行任务
+class TransactionBase;
 class TransactionTask : public ISqlTask
 {
 public:
-    TransactionTask();
+    explicit TransactionTask(std::shared_ptr<TransactionBase> pTransaction);
+    ~TransactionTask() override = default;
 
-protected:
+    TransactionTask(const TransactionTask &)            = delete;
+    TransactionTask(TransactionTask &&)                 = delete;
+    TransactionTask &operator=(const TransactionTask &) = delete;
+    TransactionTask &operator=(TransactionTask &&)      = delete;
+
+    bool     Execute() override;
+    uint32_t TryExecute();
+    void     CleanUpOnFailure();
+
+private:
+    std::shared_ptr<TransactionBase> _pTransaction;
+    static std::mutex                _mutex;
 };

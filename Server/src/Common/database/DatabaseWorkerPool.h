@@ -61,9 +61,7 @@ public:
     PreparedResultSetPtr SyncQuery(PreparedStatement<ConnectionType> *pStmt);
 
     void BeginTransaction();
-    void CommitTransaction();
-
-    int ExecuteTransaction(std::shared_ptr<TransactionBase> pTransaction);
+    void CommitTransaction(TransactionPtr<ConnectionType> pTransaction);
 
     [[nodiscard]] uint32_t GetLastError() const;
 

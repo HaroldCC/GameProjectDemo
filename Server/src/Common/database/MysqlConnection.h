@@ -35,6 +35,7 @@ class PreparedStatementBase;
 class ResultSet;
 class PreparedResultSet;
 class MySqlPreparedStatement;
+class TransactionBase;
 
 class IMySqlConnection
 {
@@ -91,9 +92,10 @@ public:
      */
     PreparedResultSetPtr Query(PreparedStatementBase *stmt);
 
-    void BeginTransaction();
-    void CommitTransaction();
-    void RollbackTransaction();
+    void     BeginTransaction();
+    void     CommitTransaction();
+    void     RollbackTransaction();
+    uint32_t ExecuteTransaction(const std::shared_ptr<TransactionBase> &pTransaction);
 
     uint32_t GetLastError();
 

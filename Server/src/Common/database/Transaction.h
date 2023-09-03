@@ -17,6 +17,12 @@ class PreparedStatementBase;
 
 class TransactionBase
 {
+    friend class TransactionTask;
+    friend class IMySqlConnection;
+
+    template <typename ConnectionType>
+    friend class DatabaseWorkerPool;
+
 public:
     TransactionBase();
 
@@ -48,4 +54,10 @@ public:
     {
         AppendPreparedStatement(pStmt);
     }
+};
+
+class TransactionCallback
+{
+public:
+    TransactionCallback(Transfu)
 };

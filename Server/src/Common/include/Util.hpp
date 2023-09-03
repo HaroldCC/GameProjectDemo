@@ -5,6 +5,8 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <chrono>
+#include <limits>
 
 namespace Util
 {
@@ -124,5 +126,31 @@ namespace Util
         return static_cast<std::underlying_type_t<Enum>>(eum);
     }
 #endif
+
+    const auto                                         g_AppStartTime = std::chrono::steady_clock::now();
+    std::chrono::time_point<std::chrono::steady_clock> GetAppStartTime()
+    {
+        return g_AppStartTime;
+    }
+
+    uint64_t GetMillSecTimeNow()
+    {
+        return uint64_t(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - GetAppStartTime()).count());
+    }
+
+    uint64_t GetMillSecTimeDiff(uint64_t oldTime, uint64_t newTime)
+    {
+        if (oldTime > newTime)
+        {
+            return ((std::numeric_limits<uint64_t>::max)() - oldTime) + newTime;
+        }
+
+        return newTime - oldTime;
+    }
+
+    uint64_t GetMillSecTimeDiffToNow(uint64_t oldTime)
+    {
+        return GetMillSecTimeDiff(oldTime, GetMillSecTimeNow());
+    }
 
 } // namespace Util

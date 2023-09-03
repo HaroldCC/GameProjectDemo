@@ -10,6 +10,9 @@
 #include "SqlTask.h"
 #include "MysqlConnection.h"
 #include "QueryResult.h"
+#include "mysqld_error.h"
+#include "Transaction.h"
+#include "Common/include/Performance.hpp"
 
 bool PingTask::Execute()
 {
@@ -59,7 +62,7 @@ QueryResultFuture ADHOCQueryTask::GetFuture() const
     return _pQueryResultPromise->get_future();
 }
 
-IPreparedQueryTask::IPreparedQueryTask(PreparedStatementBase *pStmt, bool async /* = false */)
+PreparedQueryTask::PreparedQueryTask(PreparedStatementBase *pStmt, bool async /* = false */)
     : _pStmt(pStmt), _hasResult(async), _pPreparedResultPromise(nullptr)
 {
     if (_hasResult)
@@ -68,7 +71,7 @@ IPreparedQueryTask::IPreparedQueryTask(PreparedStatementBase *pStmt, bool async 
     }
 }
 
-IPreparedQueryTask::~IPreparedQueryTask()
+PreparedQueryTask::~PreparedQueryTask()
 {
     delete _pStmt;
     _pStmt = nullptr;
@@ -79,7 +82,7 @@ IPreparedQueryTask::~IPreparedQueryTask()
     }
 }
 
-bool IPreparedQueryTask::Execute()
+bool PreparedQueryTask::Execute()
 {
     if (_hasResult)
     {
@@ -96,4 +99,55 @@ bool IPreparedQueryTask::Execute()
     }
 
     return _pSqlConn->Execute(_pStmt);
+}
+
+std::mutex TransactionTask::_mutex;
+
+TransactionTask::TransactionTask(std::shared_ptr<TransactionBase> pTransaction)
+    : _pTransaction(std::move(pTransaction))
+{
+}
+
+bool TransactionTask::Execute()
+{
+    uint32_t errcode = TryExecute();
+    if (errcode == 0)
+    {
+        return true;
+    }
+
+    if (errcode == ER_LOCK_DEADLOCK)
+    {
+        std::ostringstream strStream;
+        strStream << std::this_thread::get_id();
+        auto threadID = strStream.view();
+
+        std::lock_guard<std::mutex> lock(_mutex);
+        constexpr uint64_t          maxRetryTimeMillSec = 60'000;
+        for (uint64_t loopDuration = 0, appStartTime = Util::GetMillSecTimeNow();
+             loopDuration <= maxRetryTimeMillSec; loopDuration = Util::GetMillSecTimeDiffToNow(appStartTime))
+        {
+            if (TryExecute() == 0)
+            {
+                return true;
+            }
+
+            Log::Warn("执行事务死锁，重新执行中...重试次数：{} 线程ID：{}", loopDuration, threadID);
+        }
+
+        Log::Error("执行事务死锁失败，不再重新执行，线程ID：{}", threadID);
+    }
+
+    CleanUpOnFailure();
+    return false;
+}
+
+uint32_t TransactionTask::TryExecute()
+{
+    return _pSqlConn->ExecuteTransaction(_pTransaction);
+}
+
+void TransactionTask::CleanUpOnFailure()
+{
+    _pTransaction->CleanUp();
 }
