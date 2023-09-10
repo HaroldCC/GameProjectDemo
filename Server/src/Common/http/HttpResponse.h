@@ -29,7 +29,7 @@ namespace Http
         void SetStatusCode(status status);
         void SetHeader(std::string_view fieldName, std::string_view fieldVal);
         void SetHeader(field field, std::string_view fieldValue);
-        void SetBody(std::string_view body);
+        void SetContent(std::string_view content);
 
     private:
         bHttp::response<bHttp::string_body> _response;

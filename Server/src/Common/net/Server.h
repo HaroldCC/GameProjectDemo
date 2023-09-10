@@ -12,15 +12,15 @@
 
 namespace net
 {
-    class Server
+    class IServer
     {
     public:
-        Server(const Server &)            = delete;
-        Server(Server &&)                 = delete;
-        Server &operator=(const Server &) = delete;
-        Server &operator=(Server &&)      = delete;
-        Server(asio::io_context &ioContext, uint16_t port);
-        virtual ~Server() = default;
+        IServer(const IServer &)            = delete;
+        IServer(IServer &&)                 = delete;
+        IServer &operator=(const IServer &) = delete;
+        IServer &operator=(IServer &&)      = delete;
+        IServer(asio::io_context &ioContext, uint16_t port);
+        virtual ~IServer() = default;
 
         void Start();
 

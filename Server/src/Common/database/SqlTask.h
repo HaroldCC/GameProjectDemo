@@ -105,3 +105,17 @@ private:
     std::shared_ptr<TransactionBase> _pTransaction;
     static std::mutex                _mutex;
 };
+
+// 数据库事务执行带结果任务
+class TransactionWithResultTask final : public TransactionTask
+{
+public:
+    explicit TransactionWithResultTask(std::shared_ptr<TransactionBase> pTransaction);
+
+    TransactionFuture GetFuture();
+
+    bool Execute() override;
+
+private:
+    TransactionPromise _transactionPromise;
+};

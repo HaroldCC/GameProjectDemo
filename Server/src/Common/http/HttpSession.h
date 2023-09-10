@@ -8,7 +8,7 @@
 ************************************************************************/
 
 #pragma once
-#include "net/session.h"
+#include "Common/net/Session.h"
 #include "HttpRequest.h"
 #include "HttpResponse.h"
 #include "HttpRouter.h"
@@ -18,6 +18,7 @@ namespace Http
     class HttpSession final : public net::ISession
     {
     public:
+        using ISession::ISession;
         void AddRouter(boost::beast::http::verb method, std::string_view path, HttpHandlerFunc handler);
 
     protected:

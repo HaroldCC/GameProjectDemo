@@ -49,10 +49,10 @@ namespace net
                                 });
     }
 
-    void ISession::SendMessage(uint32_t header, const std::string &message)
+    void ISession::SendProtoMessage(size_t header, const std::string &message)
     {
         MessageDef::Message send;
-        send.set_header(header);
+        send.set_header(static_cast<uint32_t>(header));
         Log::Debug("header = {}", header);
         send.set_content(message);
         MessageBuffer content(send.ByteSizeLong());
@@ -68,6 +68,17 @@ namespace net
         {
             Log::Error("发送消息出错：【header:{}, content:{}】", header, message);
         }
+    }
+
+    void ISession::SendMsg(const net::MessageBuffer &message)
+    {
+        if (message.ReadableBytes() <= 0)
+        {
+            return;
+        }
+
+        _writeBufferQueue.push(message);
+        AsyncWrite();
     }
 
     void ISession::AsyncWrite()
@@ -210,7 +221,7 @@ namespace net
                                     //                          return;
                                     //                      }
                         )";
-            SendMessage((uint32_t)response.size(), response);
+            SendProtoMessage((uint32_t)response.size(), response);
         }
     }
 

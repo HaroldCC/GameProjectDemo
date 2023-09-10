@@ -12,6 +12,7 @@
 #include <vector>
 #include <variant>
 #include <string_view>
+#include "DatabaseEnv.h"
 
 class PreparedStatementBase;
 
@@ -25,6 +26,11 @@ class TransactionBase
 
 public:
     TransactionBase();
+
+    TransactionBase(const TransactionBase &)            = default;
+    TransactionBase(TransactionBase &&)                 = default;
+    TransactionBase &operator=(const TransactionBase &) = default;
+    TransactionBase &operator=(TransactionBase &&)      = default;
 
     virtual ~TransactionBase();
 
@@ -59,5 +65,19 @@ public:
 class TransactionCallback
 {
 public:
-    TransactionCallback(Transfu)
+    explicit TransactionCallback(TransactionFuture &&future);
+    TransactionCallback(TransactionCallback &&)            = default;
+    TransactionCallback &operator=(TransactionCallback &&) = default;
+    ~TransactionCallback()                                 = default;
+
+    TransactionCallback(const TransactionCallback &)            = delete;
+    TransactionCallback &operator=(const TransactionCallback &) = delete;
+
+    void Then(std::function<void(bool)> callback) &;
+
+    bool InvokeIfReady();
+
+private:
+    TransactionFuture         _future;
+    std::function<void(bool)> _callback;
 };

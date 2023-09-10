@@ -118,7 +118,7 @@ PreparedResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(PreparedState
 }
 
 template <typename ConnectionType>
-void DatabaseWorkerPool<ConnectionType>::BeginTransaction()
+TransactionPtr<ConnectionType> DatabaseWorkerPool<ConnectionType>::BeginTransaction()
 {
     return std::make_shared<Transaction<ConnectionType>>();
 }
@@ -127,6 +127,15 @@ template <typename ConnectionType>
 void DatabaseWorkerPool<ConnectionType>::CommitTransaction(TransactionPtr<ConnectionType> pTransaction)
 {
     _queue->Push(new TransactionTask(pTransaction));
+}
+
+template <typename ConnectionType>
+TransactionCallback DatabaseWorkerPool<ConnectionType>::CommitTransactionWithCallback(TransactionPtr<ConnectionType> pTransaction)
+{
+    TransactionWithResultTask *pTask  = new TransactionWithResultTask(pTransaction);
+    TransactionFuture          future = pTask->GetFuture();
+    _queue->Push(pTask);
+    return TransactionCallback(std::move(future));
 }
 
 template <typename ConnectionType>

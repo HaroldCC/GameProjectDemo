@@ -8,6 +8,8 @@
 ************************************************************************/
 #include "pch.h"
 #include "SqlTask.h"
+
+#include <utility>
 #include "MysqlConnection.h"
 #include "QueryResult.h"
 #include "mysqld_error.h"
@@ -150,4 +152,22 @@ uint32_t TransactionTask::TryExecute()
 void TransactionTask::CleanUpOnFailure()
 {
     _pTransaction->CleanUp();
+}
+
+TransactionWithResultTask::TransactionWithResultTask(std::shared_ptr<TransactionBase> pTransaction)
+    : TransactionTask(std::move(pTransaction))
+{
+}
+
+TransactionFuture TransactionWithResultTask::GetFuture()
+{
+    return _transactionPromise.get_future();
+}
+
+bool TransactionWithResultTask::Execute()
+{
+    bool bResult = TransactionTask::Execute();
+    _transactionPromise.set_value(bResult);
+
+    return bResult;
 }

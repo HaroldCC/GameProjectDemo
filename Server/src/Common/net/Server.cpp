@@ -16,13 +16,13 @@ namespace net
 
     static thread_local bool gNetThreadFlag = false; // 网络线程标志
 
-    Server::Server(asio::io_context &ioContext, uint16_t port)
+    IServer::IServer(asio::io_context &ioContext, uint16_t port)
         : _ioContext(ioContext), _accepter(ioContext,
                                            asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
     {
     }
 
-    void Server::Start()
+    void IServer::Start()
     {
         DoAccept();
 
@@ -40,6 +40,10 @@ namespace net
                     catch (const std::exception &e)
                     {
                         Log::Error("服务器异常退出:{}", e.what());
+                    }
+                    catch (...)
+                    {
+                        Log::Critical("服务器未知异常！！！！！");
                     }
                 }
             });

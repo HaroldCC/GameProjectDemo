@@ -71,3 +71,6 @@ class Transaction;
 
 template <typename ConnectionType>
 using TransactionPtr = std::shared_ptr<Transaction<ConnectionType>>;
+
+using TransactionFuture  = std::future<bool>;
+using TransactionPromise = std::promise<bool>;

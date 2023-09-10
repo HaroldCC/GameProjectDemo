@@ -46,7 +46,8 @@ namespace net
 
         void StartSession();
 
-        void SendMessage(uint32_t header, const std::string &message);
+        void SendProtoMessage(size_t header, const std::string &message);
+        void SendMsg(const net::MessageBuffer &message);
 
         void CloseSession();
 

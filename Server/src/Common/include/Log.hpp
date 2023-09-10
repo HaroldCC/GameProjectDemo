@@ -262,7 +262,7 @@ using HtmlFormatSink_st = HtmlFormatSink<spdlog::details::null_mutex>;
 inline constexpr std::string_view GetDefaultLogPattern()
 {
 #if defined(_DEBUG) || defined(DEBUG)
-    return "%^[%Y-%m-%d %T%e] [%s:%# %!] %l: %v%$";
+    return "%^[%Y-%m-%d %T%e] [%s:%# %l]: %v%$";
 #else
     return "%^[%Y-%m-%d %T%e] %l: %v%$";
 #endif

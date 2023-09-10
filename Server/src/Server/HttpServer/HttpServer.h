@@ -8,9 +8,15 @@
 ************************************************************************/
 #pragma once
 #include "Common/net/Server.h"
+#include "Common/http/HttpSession.h"
 
-class HttpServer final : public net::Server
+class HttpServer final : public net::IServer
 {
+private:
+    using net::IServer::IServer;
+
 protected:
     void DoAccept() override;
+
+    void InitHttpRouter(const std::shared_ptr<Http::HttpSession> &pSession);
 };

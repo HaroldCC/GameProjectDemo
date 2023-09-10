@@ -13,6 +13,7 @@
 #include <memory>
 #include "QueryResult.h"
 #include "threading/ProducerConsumerQueue.hpp"
+#include "Transaction.h"
 
 struct MySqlConnectionInfo;
 
@@ -60,8 +61,9 @@ public:
     ResultSetPtr         SyncQuery(std::string_view sql);
     PreparedResultSetPtr SyncQuery(PreparedStatement<ConnectionType> *pStmt);
 
-    void BeginTransaction();
-    void CommitTransaction(TransactionPtr<ConnectionType> pTransaction);
+    TransactionPtr<ConnectionType> BeginTransaction();
+    void                           CommitTransaction(TransactionPtr<ConnectionType> pTransaction);
+    TransactionCallback            CommitTransactionWithCallback(TransactionPtr<ConnectionType> pTransaction);
 
     [[nodiscard]] uint32_t GetLastError() const;
 

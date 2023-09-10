@@ -55,11 +55,12 @@ namespace Http
         }
     }
 
-    void HttpResponse::SetBody(std::string_view body)
+    void HttpResponse::SetContent(std::string_view content)
     {
         try
         {
-            _response.set(field::body, body);
+            size_t length = content.size();
+            _response.set(field::content_length, std::format("{}\r\n\r\n{}", length, content));
         }
         catch (const std::exception &e)
         {

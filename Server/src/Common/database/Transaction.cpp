@@ -54,3 +54,24 @@ void TransactionBase::CleanUp()
     _queries.clear();
     _cleanUp = true;
 }
+
+TransactionCallback::TransactionCallback(TransactionFuture &&future)
+    : _future(std::move(future))
+{
+}
+
+void TransactionCallback::Then(std::function<void(bool)> callback) &
+{
+    _callback = std::move(callback);
+}
+
+bool TransactionCallback::InvokeIfReady()
+{
+    if (_future.valid() && _future.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+    {
+        _callback(_future.get());
+        return true;
+    }
+
+    return false;
+}
