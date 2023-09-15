@@ -1,6 +1,6 @@
 ﻿/*************************************************************************
 > File Name       : LoginDatabase.h
-> Brief           : 登录数据库
+> Brief           : 登录数据库连接
 > Author          : Harold
 > Mail            : 2106562095@qq.com
 > Github          : www.github.com/Haroldcc
@@ -14,65 +14,52 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include "DatabaseWorkerPool.h"
+#include "MysqlConnection.h"
+
 enum LoginDatabaseEnum : uint32_t
 {
-    INSERT_CHARACTER_INFO,
-    INSERT_ACCOUNT_INFO,
+    LOGIN_SEL_ACCOUNT_BY_EMAIL,
+    LOGIN_INS_ACCOUNT,
 
     LoginDatabaseEnum_MAX,
 };
 
-enum class SQL_ARG_TYPE : uint32_t
+struct SqlStmtData
 {
-    String,
-    Int,
-    Bool,
-    Double,
+    std::string_view        sql;                // sql语句串
+    std::vector<SqlArgType> argTypes;           // 语句串中变量的类型（从左到右依次）
+    ConnectionType          joinConnectionType; // 添加至的连接类型（同步or异步）
 };
 
-struct SQL_STMT_DATA
+// clang-format off
+const std::unordered_map<LoginDatabaseEnum, SqlStmtData> g_LoginDatabaseStmtMap =
 {
-    std::string_view          sql;
-    std::vector<SQL_ARG_TYPE> argTypes;
+    {LoginDatabaseEnum::LOGIN_SEL_ACCOUNT_BY_EMAIL,
+        {"select id, username from account where email= ?",
+            {SqlArgType::String},
+            ConnectionType::SYNC
+        }
+    },
+    {
+        LoginDatabaseEnum::LOGIN_INS_ACCOUNT,
+        {
+            "insert into account (email, password, joinDate) values(?, ?, NOW())",
+            {SqlArgType::String, SqlArgType::String},
+            ConnectionType::ASYNC
+        }
+    },
+};
+// clang-format on
+
+class LoginDatabaseConnection : public IMySqlConnection
+{
+public:
+    using IMySqlConnection::IMySqlConnection;
+
+    void DoPrepareStatements() override;
 };
 
-const std::unordered_map<LoginDatabaseEnum, SQL_STMT_DATA> LOGIN_DATABASE = {
-    {LoginDatabaseEnum::INSERT_CHARACTER_INFO, {"insert into Character (name, sex, power) values (?, ?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::Bool, SQL_ARG_TYPE::Double}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-};
+using LoginDatabasePreparedStatement = PreparedStatement<LoginDatabaseConnection>;
 
-const std::unordered_map<LoginDatabaseEnum, SQL_STMT_DATA> LOGIN_DATABASE = {
-    {LoginDatabaseEnum::INSERT_CHARACTER_INFO, {"insert into Character (name, sex, power) values (?, ?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::Bool, SQL_ARG_TYPE::Double}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO3, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO4, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO5, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO6, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO7, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO8, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO9, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO10, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO11, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO12, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO13, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO14, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO15, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO16, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO17, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO18, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO19, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO20, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO21, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO22, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO23, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO24, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO25, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO26, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO27, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO28, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO29, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO30, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO31, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-    {LoginDatabaseEnum::INSERT_ACCOUNT_INFO32, {"insert into Account (account, password) values (?, ?)", {SQL_ARG_TYPE::String, SQL_ARG_TYPE::String}}},
-
-};
+extern const DatabaseWorkerPool<LoginDatabaseConnection> g_LoginDatabase;

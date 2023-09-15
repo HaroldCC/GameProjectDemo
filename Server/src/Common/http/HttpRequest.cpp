@@ -63,9 +63,9 @@ namespace Http
         return _request[headerType];
     }
 
-    [[nodiscard]] std::string_view HttpRequest::GetBody() const
-    {
-        return _request.body();
-    }
+    // [[nodiscard]] std::string_view HttpRequest::GetBody() const
+    // {
+    //     return _request.body();
+    // }
 
 } // namespace Http

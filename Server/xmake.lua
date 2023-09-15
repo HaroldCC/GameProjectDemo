@@ -38,7 +38,7 @@ target("HttpServer")
     set_kind("binary")
     add_deps("Common")
     add_packages("spdlog", "asio", "boost")
-    add_includedirs("src")
+    add_includedirs("src", "src/Common")
     add_headerfiles("src/Server/HttpServer/*.h")
     add_files("src/Server/HttpServer/*.cpp")
 

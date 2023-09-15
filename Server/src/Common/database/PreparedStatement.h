@@ -13,6 +13,23 @@
 #include <variant>
 #include <concepts>
 
+enum class SqlArgType : uint32_t
+{
+    Uint8,
+    Uint16,
+    Uint32,
+    Uint64,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    Float,
+    Double,
+    String,
+    Binary,
+    Null,
+};
+
 struct PreparedStatementData
 {
     std::variant<bool,
@@ -75,7 +92,7 @@ public:
     PreparedStatementBase &operator=(PreparedStatementBase &&)      = delete;
 
     template <typename ValueType>
-    void SetValue(const uint8_t &index, const ValueType &value);
+    void SetValue(const uint8_t &index, SqlArgType type, ValueType &&value);
 
     [[nodiscard]] uint32_t GetIndex() const
     {

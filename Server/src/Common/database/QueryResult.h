@@ -8,6 +8,7 @@
 ************************************************************************/
 #pragma once
 #include "DatabaseEnv.h"
+#include "MySqlTypeHack.h"
 #include <vector>
 #include "Field.h"
 

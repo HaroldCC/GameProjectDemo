@@ -11,16 +11,12 @@
 #include <memory>
 #include <future>
 #include <type_traits>
-#include <mysql.h>
 
-using MySqlHandle = MYSQL;
-using MySqlResult = MYSQL_RES;
-using MySqlField  = MYSQL_FIELD;
-using MySqlBind   = MYSQL_BIND;
-using MySqlStmt   = MYSQL_STMT;
-
-// Mysql 8 去除了my_bool 类型的typedef，使用这个来保证前后的兼容性，（learn by TrinityCore source）
-using MySqlBool = std::remove_pointer_t<decltype(std::declval<MYSQL_BIND>().is_null)>;
+using MySqlHandle = struct MYSQL;
+using MySqlResult = struct MYSQL_RES;
+using MySqlField  = struct MYSQL_FIELD;
+using MySqlBind   = struct MYSQL_BIND;
+using MySqlStmt   = struct MYSQL_STMT;
 
 // 数据库值类型
 // 数据库字段类型

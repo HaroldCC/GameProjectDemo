@@ -9,6 +9,7 @@
 #include "pch.h"
 #include <type_traits>
 #include <variant>
+#include "MySqlTypeHack.h"
 
 #include "MySqlPreparedStatement.h"
 #include "PreparedStatement.h"

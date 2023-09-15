@@ -11,7 +11,6 @@
 #include <string_view>
 #include <array>
 #include <memory>
-#include "QueryResult.h"
 #include "threading/ProducerConsumerQueue.hpp"
 #include "Transaction.h"
 
@@ -65,17 +64,19 @@ public:
     void                           CommitTransaction(TransactionPtr<ConnectionType> pTransaction);
     TransactionCallback            CommitTransactionWithCallback(TransactionPtr<ConnectionType> pTransaction);
 
+    PreparedStatement<ConnectionType> *GetPreparedStatement(uint32_t index);
+
     [[nodiscard]] uint32_t GetLastError() const;
 
 private:
     uint32_t        OpenConnections(EConnectionTypeIndex connType, uint8_t connectionCount);
-    ConnectionType *GetFreeConnection();
+    ConnectionType *GetFreeConnectionAndLock();
 
 private:
     using ConnectionPtr = std::unique_ptr<ConnectionType>;
     std::array<std::vector<ConnectionPtr>, EConnectionTypeIndex_Max> _connections;
 
-    std::unique_ptr<ProducerConsumerQueue<ISqlTask *>> _queue; // 与异步线程（async worker）共享
+    std::unique_ptr<ProducerConsumerQueue<ISqlTask *>> _queue;                  // 与异步线程（async worker）共享
     std::unique_ptr<MySqlConnectionInfo>               _pConnectionInfo;
     std::vector<uint8_t>                               _preparedStmtParamCount; // 记录每个预处理语句参数数量
     uint8_t                                            _asyncThreadCount;

@@ -17,6 +17,7 @@
 #include "Common/include/Assert.h"
 #include "QueryResult.h"
 #include "Transaction.h"
+#include "MySqlTypeHack.h"
 
 using namespace std::literals::chrono_literals;
 

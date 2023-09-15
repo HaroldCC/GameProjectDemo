@@ -35,7 +35,11 @@ namespace net
                                 {
                                     if (errcode)
                                     {
-                                        Log::Error("读取消息出错：{}", errcode.message());
+                                        if (errcode != asio::error::eof)
+                                        {
+                                            Log::Error("读取消息出错：{}", errcode.message());
+                                        }
+
                                         CloseSession();
                                         return;
                                     }

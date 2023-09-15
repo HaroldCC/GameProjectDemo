@@ -13,6 +13,8 @@
 #include "QueryCallBack.h"
 #include "SqlTask.h"
 #include "Transaction.h"
+#include "MySqlTypeHack.h"
+#include "QueryResult.h"
 
 template <typename ConnectionType>
 DatabaseWorkerPool<ConnectionType>::DatabaseWorkerPool()
@@ -62,6 +64,26 @@ void DatabaseWorkerPool<ConnectionType>::Close()
 }
 
 template <typename ConnectionType>
+bool DatabaseWorkerPool<ConnectionType>::PrepareStatements()
+{
+    for (auto &&connectionType : _connections)
+    {
+        for (auto &&connection : connectionType)
+        {
+            connection->TryLock();
+            if (!connection->PrepareStatements())
+            {
+                connection->UnLock();
+                Close();
+                return false;
+            }
+
+            connection->UnLock();
+        }
+    }
+}
+
+template <typename ConnectionType>
 QueryCallback DatabaseWorkerPool<ConnectionType>::AsyncQuery(std::string_view sql)
 {
     ADHOCQueryTask   *pTask        = new ADHOCQueryTask(sql, true);
@@ -82,7 +104,7 @@ QueryCallback DatabaseWorkerPool<ConnectionType>::AsyncQuery(PreparedStatement<C
 template <typename ConnectionType>
 ResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(std::string_view sql)
 {
-    ConnectionType *pConnection = GetFreeConnection();
+    ConnectionType *pConnection = GetFreeConnectionAndLock();
     Assert(nullptr != pConnection);
 
     ResultSetPtr pResult = pConnection->Query(sql);
@@ -100,7 +122,7 @@ ResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(std::string_view sql)
 template <typename ConnectionType>
 PreparedResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(PreparedStatement<ConnectionType> *pStmt)
 {
-    ConnectionType      *pConnection = GetFreeConnection();
+    ConnectionType      *pConnection = GetFreeConnectionAndLock();
     PreparedResultSetPtr pResult     = pConnection->Query(pStmt);
     pConnection->Unlock();
 
@@ -175,7 +197,7 @@ uint32_t DatabaseWorkerPool<ConnectionType>::OpenConnections(EConnectionTypeInde
 }
 
 template <typename ConnectionType>
-ConnectionType *DatabaseWorkerPool<ConnectionType>::GetFreeConnection()
+ConnectionType *DatabaseWorkerPool<ConnectionType>::GetFreeConnectionAndLock()
 {
     const auto      connectionCount = _connections[EConnectionTypeIndex_Sync].size();
     ConnectionType *pConnection     = nullptr;
@@ -190,4 +212,10 @@ ConnectionType *DatabaseWorkerPool<ConnectionType>::GetFreeConnection()
     }
 
     return pConnection;
+}
+
+template <typename ConnectionType>
+PreparedStatement<ConnectionType> *DatabaseWorkerPool<ConnectionType>::GetPreparedStatement(uint32_t index)
+{
+    return new PreparedStatement<ConnectionType>(index, _prep)
 }
