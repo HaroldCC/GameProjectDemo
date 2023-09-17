@@ -91,6 +91,16 @@ public:
     PreparedStatementBase &operator=(const PreparedStatementBase &) = delete;
     PreparedStatementBase &operator=(PreparedStatementBase &&)      = delete;
 
+    template <typename... Args>
+    void BindValues(const std::vector<SqlArgType> &argTypes, Args &&...args)
+    {
+        static_assert(argTypes.size() == sizeof...(args), "预处理语句参数数量与实际添加不匹配，请检查！");
+        for (size_t i = 0; i < argTypes.size(); ++i)
+        {
+            SetValue(i, argTypes[i], std::forward<Args>(args));
+        }
+    }
+
     template <typename ValueType>
     void SetValue(const uint8_t &index, SqlArgType type, ValueType &&value);
 

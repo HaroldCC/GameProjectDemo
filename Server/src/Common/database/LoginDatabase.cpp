@@ -10,7 +10,7 @@
 #include "pch.h"
 #include "LoginDatabase.h"
 
-const DatabaseWorkerPool<LoginDatabaseConnection> g_LoginDatabase;
+DatabaseWorkerPool<LoginDatabaseConnection> g_LoginDatabase;
 
 void LoginDatabaseConnection::DoPrepareStatements()
 {

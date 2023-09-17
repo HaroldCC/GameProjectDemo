@@ -62,4 +62,4 @@ public:
 
 using LoginDatabasePreparedStatement = PreparedStatement<LoginDatabaseConnection>;
 
-extern const DatabaseWorkerPool<LoginDatabaseConnection> g_LoginDatabase;
+extern DatabaseWorkerPool<LoginDatabaseConnection> g_LoginDatabase;

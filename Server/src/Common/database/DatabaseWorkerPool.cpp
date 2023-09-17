@@ -15,6 +15,7 @@
 #include "Transaction.h"
 #include "MySqlTypeHack.h"
 #include "QueryResult.h"
+#include "MySqlPreparedStatement.h"
 
 template <typename ConnectionType>
 DatabaseWorkerPool<ConnectionType>::DatabaseWorkerPool()
@@ -79,8 +80,32 @@ bool DatabaseWorkerPool<ConnectionType>::PrepareStatements()
             }
 
             connection->UnLock();
+
+            const size_t prepareParamSize = connection->_stmts.size();
+            if (prepareParamSize > _preparedStmtParamCount.size())
+            {
+                _preparedStmtParamCount.resize(prepareParamSize);
+            }
+
+            for (size_t i = 0; i < prepareParamSize; ++i)
+            {
+                if (_preparedStmtParamCount[i] > 0)
+                {
+                    continue;
+                }
+
+                if (MySqlPreparedStatement *pMySqlStmt = connection->_stmts[i].get(); pMySqlStmt != nullptr)
+                {
+                    const uint32_t paramCount = pMySqlStmt->GetParameterCount();
+                    Assert(paramCount < (std::numeric_limits<uint8_t>::max)());
+
+                    _preparedStmtParamCount[i] = paramCount;
+                }
+            }
         }
     }
+
+    return true;
 }
 
 template <typename ConnectionType>
@@ -217,5 +242,5 @@ ConnectionType *DatabaseWorkerPool<ConnectionType>::GetFreeConnectionAndLock()
 template <typename ConnectionType>
 PreparedStatement<ConnectionType> *DatabaseWorkerPool<ConnectionType>::GetPreparedStatement(uint32_t index)
 {
-    return new PreparedStatement<ConnectionType>(index, _prep)
+    return new PreparedStatement<ConnectionType>(index, _preparedStmtParamCount[index]);
 }

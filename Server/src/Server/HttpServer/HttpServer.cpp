@@ -56,6 +56,7 @@ void HttpServer::InitHttpRouter(const std::shared_ptr<Http::HttpSession> &pSessi
 std::optional<Http::HttpResponse> HttpServer::GetUserInfo(const Http::HttpRequest &request)
 {
     Http::HttpResponse              resp;
-    LoginDatabasePreparedStatement *pStmt = g_LoginDatabase.resp.SetStatusCode(status::ok);
+    LoginDatabasePreparedStatement *pStmt = g_LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_BY_EMAIL);
+    resp.SetStatusCode(status::ok);
     return std::nullopt;
 }
