@@ -309,6 +309,11 @@ namespace Log
             spdlog::set_default_logger(_logger);
         }
 
+        void Flush() const
+        {
+            _logger->flush();
+        }
+
     private:
         CLogger() = default;
 

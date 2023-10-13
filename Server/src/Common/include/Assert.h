@@ -31,6 +31,7 @@
         if (!(check))                               \
         {                                           \
             Log::Critical(msg, __VA_ARGS__);        \
+            Log::CLogger::GetLogger().Flush();      \
             TERMINATE();                            \
         }                                           \
     }
