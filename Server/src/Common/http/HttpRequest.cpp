@@ -8,8 +8,8 @@
 ************************************************************************/
 #include "pch.h"
 #include "HttpRequest.h"
-#include "include/util.hpp"
-#include "Common/include/log.hpp"
+#include "include/Util.hpp"
+#include "Common/include/Log.hpp"
 
 namespace Http
 {

@@ -10,6 +10,7 @@
 #include "QueryResult.h"
 #include "Common/include/Assert.h"
 #include "Field.h"
+#include "MySqlTypeHack.h"
 
 static constexpr uint32_t SizeForType(MYSQL_FIELD *field)
 {
@@ -168,7 +169,7 @@ static constexpr char const *FieldTypeToString(enum_field_types type, uint32_t f
     }
 }
 
-static constexpr void InitializeDatabaseFieldMetadata(QueryResultFieldMetadata *meta, const MySqlField *field, uint32_t fieldIndex)
+static constexpr void InitializeDatabaseFieldMetadata(QueryResultFieldMetadata *meta, const MySqlField *field, uint32_t fieldIndex, bool bBinary)
 {
     Assert(nullptr != meta || nullptr != field);
 
@@ -179,16 +180,17 @@ static constexpr void InitializeDatabaseFieldMetadata(QueryResultFieldMetadata *
     meta->typeName   = FieldTypeToString(field->type, field->flags);
     meta->index      = fieldIndex;
     meta->fieldType  = MysqlTypeToFieldType(field->type, field->flags);
+    meta->bBinary    = bBinary;
 }
 
 ResultSet::ResultSet(MySqlResult *result, MySqlField *fields, uint64_t rowCount, uint32_t fieldCount)
-    : _pResult(result), _pFields(fields), _rowCount(rowCount), _fieldCount(fieldCount)
+    : _rowCount(rowCount), _fieldCount(fieldCount), _pResult(result), _pFields(fields)
 {
     _fieldMetadata.resize(_fieldCount);
     _pCurrentRow = new Field[_fieldCount];
     for (uint32_t i = 0; i < _fieldCount; ++i)
     {
-        InitializeDatabaseFieldMetadata(&_fieldMetadata[i], &fields[i], i);
+        InitializeDatabaseFieldMetadata(&_fieldMetadata[i], &fields[i], i, false);
         _pCurrentRow[i].SetMetadata(&_fieldMetadata[i]);
     }
 }
@@ -248,12 +250,12 @@ void ResultSet::CleanUp()
 }
 
 PreparedResultSet::PreparedResultSet(MySqlStmt *pStmt, MySqlResult *pResult, uint64_t rowCount, uint32_t fieldCount)
-    : _pStmt(pStmt),
-      _pMetadataResult(pResult),
-      _rowCount(rowCount),
-      _fieldCount(fieldCount),
+    : _rowCount(rowCount),
       _rowPosition(0),
-      _pBind(nullptr)
+      _fieldCount(fieldCount),
+      _pBind(nullptr),
+      _pStmt(pStmt),
+      _pMetadataResult(pResult)
 {
     if (nullptr == _pMetadataResult)
     {
@@ -296,7 +298,7 @@ PreparedResultSet::PreparedResultSet(MySqlStmt *pStmt, MySqlResult *pResult, uin
         uint32_t size = SizeForType(&pField[i]);
         rowSize += size;
 
-        InitializeDatabaseFieldMetadata(&_fieldMetadata[i], &pField[i], i);
+        InitializeDatabaseFieldMetadata(&_fieldMetadata[i], &pField[i], i, true);
 
         _pBind[i].buffer_type   = pField[i].type;
         _pBind[i].buffer_length = size;
@@ -370,6 +372,11 @@ PreparedResultSet::PreparedResultSet(MySqlStmt *pStmt, MySqlResult *pResult, uin
 
     // 所有数据绑定完毕，释放
     mysql_stmt_free_result(_pStmt);
+}
+
+PreparedResultSet::~PreparedResultSet()
+{
+    CleanUp();
 }
 
 bool PreparedResultSet::NextRow()

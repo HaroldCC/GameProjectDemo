@@ -8,14 +8,15 @@
 ************************************************************************/
 #pragma once
 
-#include <array>
 #include <vector>
-#include <string>
 #include <cstdint>
 #include <unordered_map>
 
 #include "DatabaseWorkerPool.h"
 #include "MysqlConnection.h"
+#include "QueryCallback.h"
+#include "QueryResult.h"
+#include "Field.h"
 
 enum LoginDatabaseEnum : uint32_t
 {
@@ -36,19 +37,19 @@ struct SqlStmtData
 const std::unordered_map<LoginDatabaseEnum, SqlStmtData> g_LoginDatabaseStmtMap =
 {
     {LoginDatabaseEnum::LOGIN_SEL_ACCOUNT_BY_EMAIL,
-        {"select id, username from account where email= ?",
+        {"select id, name, email, age, intro from account where email= ?",
             {SqlArgType::String},
             ConnectionType::SYNC
         }
     },
-    {
-        LoginDatabaseEnum::LOGIN_INS_ACCOUNT,
-        {
-            "insert into account (email, password, joinDate) values(?, ?, NOW())",
-            {SqlArgType::String, SqlArgType::String},
-            ConnectionType::ASYNC
-        }
-    },
+    //{
+    //    LoginDatabaseEnum::LOGIN_INS_ACCOUNT,
+    //    {
+    //        "insert into account (email, password, joinDate) values(?, ?, NOW())",
+    //        {SqlArgType::String, SqlArgType::String},
+    //        ConnectionType::ASYNC
+    //    }
+    //},
 };
 // clang-format on
 
@@ -62,4 +63,4 @@ public:
 
 using LoginDatabasePreparedStatement = PreparedStatement<LoginDatabaseConnection>;
 
-extern const DatabaseWorkerPool<LoginDatabaseConnection> g_LoginDatabase;
+extern DatabaseWorkerPool<LoginDatabaseConnection> g_LoginDatabase;

@@ -1,9 +1,13 @@
 ﻿#include "HttpServer.h"
 #include "Common/include/Log.hpp"
+#include "Common/database/LoginDatabase.h"
 
 int main()
 {
     Log::CLogger::GetLogger().InitLogger("log/HttpServer.html", 0, 10240, 10);
+
+    g_LoginDatabase.Open({"root", "cr11234", "test", "127.0.0.1", "3306"}, 1, 1);
+    g_LoginDatabase.PrepareStatements();
 
     asio::io_context ioContext;
     try

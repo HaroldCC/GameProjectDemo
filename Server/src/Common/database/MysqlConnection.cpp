@@ -7,7 +7,7 @@
 > Created Time    : 2023年07月27日  15时37分16秒
 ************************************************************************/
 #include "pch.h"
-#include "MySqlConnection.h"
+#include "MysqlConnection.h"
 #include "Common/include/Log.hpp"
 #include "Common/include/Performance.hpp"
 #include "mysqld_error.h"
@@ -495,6 +495,7 @@ bool IMySqlConnection::Query(PreparedStatementBase *stmt, MySqlPreparedStatement
     Assert(nullptr != pMySqlPreparedStmt, std::format("尝试获取索引为 {} 的预处理语句错误，请排查原因", index));
 
     pMySqlPreparedStmt->BindParameters(stmt);
+    // pMySqlPreparedStmt = pTmpMySqlPreparedStmt;
 
     MySqlStmt *pMySqlStmt = pMySqlPreparedStmt->GetMySqlStmt();
     MySqlBind *pMySqlBind = pMySqlPreparedStmt->GetMySqlBind();

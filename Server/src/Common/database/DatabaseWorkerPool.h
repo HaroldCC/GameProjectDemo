@@ -66,8 +66,6 @@ public:
 
     PreparedStatement<ConnectionType> *GetPreparedStatement(uint32_t index);
 
-    [[nodiscard]] uint32_t GetLastError() const;
-
 private:
     uint32_t        OpenConnections(EConnectionTypeIndex connType, uint8_t connectionCount);
     ConnectionType *GetFreeConnectionAndLock();
@@ -76,9 +74,9 @@ private:
     using ConnectionPtr = std::unique_ptr<ConnectionType>;
     std::array<std::vector<ConnectionPtr>, EConnectionTypeIndex_Max> _connections;
 
-    std::unique_ptr<ProducerConsumerQueue<ISqlTask *>> _queue;                  // 与异步线程（async worker）共享
     std::unique_ptr<MySqlConnectionInfo>               _pConnectionInfo;
+    std::unique_ptr<ProducerConsumerQueue<ISqlTask *>> _queue;                  // 与异步线程（async worker）共享
     std::vector<uint8_t>                               _preparedStmtParamCount; // 记录每个预处理语句参数数量
-    uint8_t                                            _asyncThreadCount;
-    uint8_t                                            _syncThreadCount;
+    uint8_t                                            _asyncThreadCount{};
+    uint8_t                                            _syncThreadCount{};
 };

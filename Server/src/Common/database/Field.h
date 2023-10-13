@@ -10,9 +10,27 @@
 
 #include <cstdint>
 #include <string_view>
-#include <vector>
 #include "DatabaseEnv.h"
-#include <any>
+
+// 数据库值类型
+// 数据库字段类型
+enum class DatabaseFieldType : uint8_t
+{
+    Null,
+    UInt8,
+    Int8,
+    UInt16,
+    Int16,
+    UInt32,
+    Int32,
+    UInt64,
+    Int64,
+    Float,
+    Double,
+    Decimal,
+    Date,
+    Binary
+};
 
 // 查询结果字段信息
 struct QueryResultFieldMetadata
@@ -24,6 +42,7 @@ struct QueryResultFieldMetadata
     std::string_view  typeName;
     uint32_t          index     = 0;
     DatabaseFieldType fieldType = DatabaseFieldType::Null;
+    bool              bBinary   = false;
 };
 
 class ResultSet;
@@ -107,57 +126,65 @@ private:
     }
 
 public:
-    [[nodiscard]] DatabaseFieldType GetType() const;
+    // [[nodiscard]] DatabaseFieldType GetType() const;
 
-    [[nodiscard]] bool IsType(DatabaseFieldType type) const;
+    // [[nodiscard]] bool IsType(DatabaseFieldType type) const;
 
-    explicit operator uint8_t()
+    operator uint8_t()
     {
         return GetUInt8();
     }
 
-    explicit operator uint16_t()
+    operator uint16_t()
     {
         return GetUInt16();
     }
 
-    explicit operator uint32_t()
+    operator uint32_t()
     {
         return GetUInt32();
     }
 
-    explicit operator uint64_t()
+    operator uint64_t()
     {
         return GetUInt64();
     }
 
-    explicit operator int8_t()
+    operator int8_t()
     {
         return GetInt8();
     }
 
-    explicit operator int16_t()
+    operator int16_t()
     {
         return GetInt16();
     }
 
-    explicit operator int32_t()
+    operator int32_t()
     {
         return GetInt32();
     }
 
-    explicit operator int64_t()
+    operator int64_t()
     {
         return GetInt64();
     }
 
-    explicit operator const char *()
+    operator const char *()
+    {
+        return GetCString();
+    }
+
+    operator std::string()
     {
         return GetCString();
     }
 
 private:
-    void LogWrongGetter(const char *getter) const;
+    template <typename T>
+    constexpr std::pair<bool, T> CheckType() const;
+
+    void LogWrongGetter(std::string_view strGetter) const;
 
     void SetValue(char const *newValue, uint32_t length);
 

@@ -13,10 +13,13 @@ rule("Debug")
         if is_mode("debug") then
             target:add("defines", "DEBUG", "PERFORMANCE_DECT")
             target:set("suffixname", "_d")
+            target:set("symbols", "debug")
+            target:set("optimize", "none")
         end
 
         if target:is_plat("windows") then
             target:add("defines", "WIN32")
+            target:add("cxxflags", "cl::/wd4819")
         end
 
         if target:is_plat("windows") then

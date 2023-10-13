@@ -103,6 +103,11 @@ bool PreparedQueryTask::Execute()
     return _pSqlConn->Execute(_pStmt);
 }
 
+PreparedResultFuture PreparedQueryTask::GetFuture() const
+{
+    return _pPreparedResultPromise->get_future();
+}
+
 std::mutex TransactionTask::_mutex;
 
 TransactionTask::TransactionTask(std::shared_ptr<TransactionBase> pTransaction)

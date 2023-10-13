@@ -18,26 +18,6 @@ using MySqlField  = struct MYSQL_FIELD;
 using MySqlBind   = struct MYSQL_BIND;
 using MySqlStmt   = struct MYSQL_STMT;
 
-// 数据库值类型
-// 数据库字段类型
-enum class DatabaseFieldType : uint8_t
-{
-    Null,
-    UInt8,
-    Int8,
-    UInt16,
-    Int16,
-    UInt32,
-    Int32,
-    UInt64,
-    Int64,
-    Float,
-    Double,
-    Decimal,
-    Date,
-    Binary
-};
-
 class ResultSet;
 using ResultSetPtr = std::shared_ptr<ResultSet>;
 

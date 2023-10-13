@@ -10,16 +10,18 @@
 #include "DatabaseWorkerPool.h"
 #include "Common/include/Assert.h"
 #include "MysqlConnection.h"
-#include "QueryCallBack.h"
+#include "QueryCallback.h"
 #include "SqlTask.h"
 #include "Transaction.h"
 #include "MySqlTypeHack.h"
 #include "QueryResult.h"
+#include "MySqlPreparedStatement.h"
+#include "LoginDatabase.h"
+#include "Common/include/Util.hpp"
 
 template <typename ConnectionType>
 DatabaseWorkerPool<ConnectionType>::DatabaseWorkerPool()
-    : _queue(new ProducerConsumerQueue<ISqlTask *>()),
-      _asyncThreadCount(0), _syncThreadCount(0)
+    : _queue(new ProducerConsumerQueue<ISqlTask *>())
 {
     Assert(mysql_thread_safe(), "数据库不是线程安全的");
 }
@@ -68,19 +70,73 @@ bool DatabaseWorkerPool<ConnectionType>::PrepareStatements()
 {
     for (auto &&connectionType : _connections)
     {
-        for (auto &&connection : connectionType)
+        for (auto &&pConnection : connectionType)
         {
-            connection->TryLock();
-            if (!connection->PrepareStatements())
+            pConnection->TryLock();
+            if (!pConnection->PrepareStatements())
             {
-                connection->UnLock();
+                pConnection->UnLock();
                 Close();
                 return false;
             }
 
-            connection->UnLock();
+            pConnection->UnLock();
+
+            const size_t preparedSize = pConnection->_stmts.size();
+            if (_preparedStmtParamCount.size() < preparedSize)
+            {
+                _preparedStmtParamCount.resize(preparedSize);
+            }
+
+            for (size_t i = 0; i < preparedSize; ++i)
+            {
+                if (_preparedStmtParamCount[i] > 0)
+                {
+                    continue;
+                }
+
+                if (MySqlPreparedStatement *pStmt = pConnection->_stmts[i].get(); pStmt != nullptr)
+                {
+                    const uint32_t paramCount = pStmt->GetParameterCount();
+                    Assert(paramCount < (std::numeric_limits<uint8_t>::max)());
+
+                    _preparedStmtParamCount[i] = static_cast<uint8_t>(paramCount);
+                }
+            }
         }
     }
+
+    return true;
+}
+
+template <typename ConnectionType>
+void DatabaseWorkerPool<ConnectionType>::AsyncExecute(std::string_view sql)
+{
+    ADHOCQueryTask *pTask = new ADHOCQueryTask(sql);
+    _queue->Push(pTask);
+}
+
+template <typename ConnectionType>
+void DatabaseWorkerPool<ConnectionType>::AsyncExecute(PreparedStatement<ConnectionType> *pStmt)
+{
+    PreparedQueryTask *pTask = new PreparedQueryTask(pStmt);
+    _queue->Push(pTask);
+}
+
+template <typename ConnectionType>
+void DatabaseWorkerPool<ConnectionType>::SyncExecute(std::string_view sql)
+{
+    ConnectionType *pConnection = GetFreeConnectionAndLock();
+    pConnection->Execute(sql);
+    pConnection->UnLock();
+}
+
+template <typename ConnectionType>
+void DatabaseWorkerPool<ConnectionType>::SyncExecute(PreparedStatement<ConnectionType> *pStmt)
+{
+    ConnectionType *pConnection = GetFreeConnectionAndLock();
+    pConnection->Execute(pStmt);
+    pConnection->UnLock();
 }
 
 template <typename ConnectionType>
@@ -108,7 +164,7 @@ ResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(std::string_view sql)
     Assert(nullptr != pConnection);
 
     ResultSetPtr pResult = pConnection->Query(sql);
-    pConnection->Unlock();
+    pConnection->UnLock();
 
     if (nullptr == pResult || 0 == pResult->GetRowCount() || !pResult->NextRow())
     {
@@ -124,7 +180,7 @@ PreparedResultSetPtr DatabaseWorkerPool<ConnectionType>::SyncQuery(PreparedState
 {
     ConnectionType      *pConnection = GetFreeConnectionAndLock();
     PreparedResultSetPtr pResult     = pConnection->Query(pStmt);
-    pConnection->Unlock();
+    pConnection->UnLock();
 
     // 清空代理语句内存
     delete pStmt;
@@ -179,7 +235,8 @@ uint32_t DatabaseWorkerPool<ConnectionType>::OpenConnections(EConnectionTypeInde
         }
         break;
         default:
-            Assert(false, std::format("未知的连接类型索引：{}，请检查配置，服务器退出...", connType));
+            Assert(false, std::format("未知的连接类型索引:{}，请检查配置，服务器退出...", Util::ToUnderlying(connType)));
+            break;
         };
 
         Assert(pConnection != nullptr);
@@ -217,5 +274,7 @@ ConnectionType *DatabaseWorkerPool<ConnectionType>::GetFreeConnectionAndLock()
 template <typename ConnectionType>
 PreparedStatement<ConnectionType> *DatabaseWorkerPool<ConnectionType>::GetPreparedStatement(uint32_t index)
 {
-    return new PreparedStatement<ConnectionType>(index, _prep)
+    return new PreparedStatement<ConnectionType>(index, _preparedStmtParamCount[index]);
 }
+
+template class DatabaseWorkerPool<LoginDatabaseConnection>;

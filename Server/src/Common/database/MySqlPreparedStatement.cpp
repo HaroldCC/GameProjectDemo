@@ -16,70 +16,6 @@
 #include "Common/include/Log.hpp"
 #include "Common/include/Assert.h"
 
-template <typename T>
-struct MysqlType
-{
-};
-
-template <>
-struct MysqlType<uint8_t>
-    : std::integral_constant<enum_field_types, MYSQL_TYPE_TINY>
-{
-};
-
-template <>
-struct MysqlType<uint16_t>
-    : std::integral_constant<enum_field_types, MYSQL_TYPE_SHORT>
-{
-};
-
-template <>
-struct MysqlType<uint32_t>
-    : std::integral_constant<enum_field_types, MYSQL_TYPE_LONG>
-{
-};
-
-template <>
-struct MysqlType<uint64_t>
-    : std::integral_constant<enum_field_types, MYSQL_TYPE_LONGLONG>
-{
-};
-
-template <>
-struct MysqlType<int8_t>
-    : std::integral_constant<enum_field_types, MYSQL_TYPE_TINY>
-{
-};
-
-template <>
-struct MysqlType<int16_t>
-    : std::integral_constant<enum_field_types, MYSQL_TYPE_SHORT>
-{
-};
-
-template <>
-struct MysqlType<int32_t>
-    : std::integral_constant<enum_field_types, MYSQL_TYPE_LONG>
-{
-};
-
-template <>
-struct MysqlType<int64_t>
-    : std::integral_constant<enum_field_types, MYSQL_TYPE_LONGLONG>
-{
-};
-
-template <>
-struct MysqlType<float> : std::integral_constant<enum_field_types, MYSQL_TYPE_FLOAT>
-{
-};
-
-template <>
-struct MysqlType<double>
-    : std::integral_constant<enum_field_types, MYSQL_TYPE_DOUBLE>
-{
-};
-
 MySqlPreparedStatement::MySqlPreparedStatement(MySqlStmt *pMySqlStmt, std::string_view sqlString)
     : _pMySqlStmt(pMySqlStmt),
       _pStmt(nullptr),
@@ -139,7 +75,7 @@ void MySqlPreparedStatement::SetParameter(uint8_t index, T &&value)
     _paramAssignFlag[index] = true;
     MySqlBind *pParam       = &_pBind[index];
     uint32_t   length       = sizeof(T);
-    pParam->buffer_type     = MysqlType<std::remove_cvref_t<T>>::value;
+    pParam->buffer_type     = MysqlType<std::decay_t<T>>::value;
     delete[] static_cast<char *>(pParam->buffer);
     pParam->buffer        = new char[length];
     pParam->buffer_length = 0;
@@ -169,7 +105,7 @@ void MySqlPreparedStatement::SetParameter(uint8_t index, bool value)
     SetParameter(index, uint8_t(value ? 1 : 0));
 }
 
-void MySqlPreparedStatement::SetParameter(uint8_t index, std::string_view str)
+void MySqlPreparedStatement::SetParameter(uint8_t index, const std::string &str)
 {
     AssertValidIndex(index);
     _paramAssignFlag[index] = true;

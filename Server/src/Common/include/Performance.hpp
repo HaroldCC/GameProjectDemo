@@ -11,7 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <chrono>
-#include "log.hpp"
+#include "Log.hpp"
 #include "Util.hpp"
 
 namespace Util
@@ -76,9 +76,9 @@ namespace Util
 } // namespace Util
 
 #if defined(PERFORMANCE_DECT)
-#define PERFORMANCE_SCOPE_LINE(msg, line) \
-    Util::Timer timer##line(msg, true)
-#define PERFORMANCE_SCOPE(msg) PERFORMANCE_SCOPE_LINE(msg, __LINE__)
+    #define PERFORMANCE_SCOPE_LINE(msg, line) \
+        Util::Timer timer##line(msg, true)
+    #define PERFORMANCE_SCOPE(msg) PERFORMANCE_SCOPE_LINE(msg, __LINE__)
 #else
-#define PERFORMANCE_SCOPE(msg)
+    #define PERFORMANCE_SCOPE(msg)
 #endif

@@ -5,8 +5,8 @@
 #include "spdlog/spdlog.h"
 #include "toml++/toml.h"
 #include "asio.hpp"
-#include "Common/include/log.hpp"
-#include "Common/include/util.hpp"
+#include "Common/include/Log.hpp"
+#include "Common/include/Util.hpp"
 #include "boost/uuid/uuid.hpp"
 #include "boost/uuid/uuid_io.hpp"
 #include "boost/uuid/uuid_generators.hpp"
@@ -23,7 +23,7 @@ namespace http = boost::beast::http;
 #include "doctest/doctest.h"
 
 #include "test_buffer.h"
-#include "Common/include/performance.hpp"
+#include "Common/include/Performance.hpp"
 
 using std::cout;
 using std::endl;
@@ -282,7 +282,7 @@ int main(int argc, char **argv)
         Log::Error("{}\n", i);
     }
 
-    std::string_view content("This is a string_view !");
+    [[maybe_unused]] std::string_view content("This is a string_view !");
     // std::vector<std::string_view> subStrings = Util::Split(content, " ");
     // for (auto &&item : subStrings)
     // {
@@ -418,6 +418,7 @@ int main(int argc, char **argv)
         A &operator=(A &&)
         {
             Log::Debug("A::OpMtor");
+            return *this;
         }
         A(const A &)
         {
@@ -432,6 +433,7 @@ int main(int argc, char **argv)
         A &operator=(const A &)
         {
             Log::Debug("A::opCtor");
+            return *this;
         }
 
         virtual ~A()
@@ -460,11 +462,13 @@ int main(int argc, char **argv)
         B &operator=(const B &)
         {
             Log::Debug("B::OpCtor");
+            return *this;
         }
 
         B &operator=(B &&)
         {
             Log::Debug("B::OpMtor");
+            return *this;
         }
 
         virtual ~B()

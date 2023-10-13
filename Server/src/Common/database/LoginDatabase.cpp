@@ -9,11 +9,19 @@
 
 #include "pch.h"
 #include "LoginDatabase.h"
+#include "Common/include/Util.hpp"
+#include "Common/database/MySqlPreparedStatement.h"
+#include "QueryResult.h"
 
-const DatabaseWorkerPool<LoginDatabaseConnection> g_LoginDatabase;
+DatabaseWorkerPool<LoginDatabaseConnection> g_LoginDatabase;
 
 void LoginDatabaseConnection::DoPrepareStatements()
 {
+    if (!_reconnecting)
+    {
+        _stmts.resize(Util::ToUnderlying(LoginDatabaseEnum::LoginDatabaseEnum_MAX));
+    }
+
     for (auto &&item : g_LoginDatabaseStmtMap)
     {
         PrepareStatement(item.first, item.second.sql, item.second.joinConnectionType);

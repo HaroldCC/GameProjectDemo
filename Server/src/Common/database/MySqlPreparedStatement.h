@@ -40,7 +40,7 @@ private:
     void SetParameter(uint8_t index, T &&value);
     void SetParameter(uint8_t index, std::nullptr_t);
     void SetParameter(uint8_t index, bool value);
-    void SetParameter(uint8_t index, std::string_view str);
+    void SetParameter(uint8_t index, const std::string &str);
     void SetParameter(uint8_t index, const std::vector<uint8_t> &value);
 
     void AssertValidIndex(uint8_t index);

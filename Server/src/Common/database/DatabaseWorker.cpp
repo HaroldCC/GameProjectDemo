@@ -12,7 +12,7 @@
 #include "SqlTask.h"
 
 DatabaseWorker::DatabaseWorker(ProducerConsumerQueue<ISqlTask *> *queue, IMySqlConnection *sqlConn)
-    : _queue(queue), _sqlConn(sqlConn), _canceling(false)
+    : _sqlConn(sqlConn), _queue(queue), _canceling(false)
 {
     _workerThread = std::thread(&DatabaseWorker::WorkThread, this);
 }

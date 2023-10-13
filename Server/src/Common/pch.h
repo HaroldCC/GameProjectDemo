@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <queue>
 
-#include "include/platform.h"
+#include "include/Platform.h"
 #include "asio.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_sinks.h"

@@ -1,6 +1,6 @@
-﻿#include "session.h"
-#include "Common/include/log.hpp"
-#include "Common/include/platform.h"
+﻿#include "Session.h"
+#include "Common/include/Log.hpp"
+#include "Common/include/Platform.h"
 #include "MessageDef.pb.h"
 
 namespace net

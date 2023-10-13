@@ -12,9 +12,7 @@
 #include <queue>
 #include <atomic>
 #include <asio.hpp>
-#include "buffer.hpp"
-
-// #include "buffer.hpp"
+#include "Buffer.hpp"
 
 namespace net
 {
