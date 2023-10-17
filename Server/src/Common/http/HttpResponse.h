@@ -7,18 +7,17 @@
 > Created Time    : 2023年07月17日  12时21分05秒
 ************************************************************************/
 #pragma once
-#include "boost/beast.hpp"
-
-namespace bHttp = boost::beast::http;
+#include "HttpCommon.h"
+#include <string_view>
+#include <memory>
 
 namespace Http
 {
-    using status = boost::beast::http::status;
-    using field  = boost::beast::http::field;
-
     class HttpResponse final
     {
     public:
+        HttpResponse();
+
         /**
          * @brief 获取要发送的Http响应内容
          *
@@ -26,12 +25,13 @@ namespace Http
          */
         [[nodiscard]] std::string_view GetPayload() const;
 
-        void SetStatusCode(status status);
+        void SetStatusCode(Status status);
         void SetHeader(std::string_view fieldName, std::string_view fieldVal);
-        void SetHeader(field field, std::string_view fieldValue);
+        void SetHeader(Field field, std::string_view fieldValue);
         void SetContent(std::string_view content);
 
     private:
-        bHttp::response<bHttp::string_body> _response;
+        struct HttpResponseImpl;
+        std::shared_ptr<HttpResponseImpl> _pImpl;
     };
 } // namespace Http

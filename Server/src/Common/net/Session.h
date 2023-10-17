@@ -18,6 +18,8 @@ namespace net
 {
     class ISession : public std::enable_shared_from_this<ISession>
     {
+        friend class IServer;
+
     public:
         ISession(const ISession &)            = delete;
         ISession(ISession &&)                 = delete;
@@ -70,6 +72,8 @@ namespace net
         }
 
     protected:
+        virtual bool Update();
+
         virtual void ReadHandler() = 0;
 
         template <typename Proto>

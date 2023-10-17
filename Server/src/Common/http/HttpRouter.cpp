@@ -6,20 +6,19 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年07月20日  11时53分00秒
 ************************************************************************/
-#include "pch.h"
 #include "HttpRouter.h"
 
-#include <utility>
 #include "Common/include/Log.hpp"
+#include "boost/beast.hpp"
 
 namespace Http
 {
     std::optional<HttpResponse> HttpRouter::Handle(const HttpRequest &req)
     {
-        boost::beast::http::verb mtd = boost::beast::http::verb::unknown;
+        Verb mtd = Verb::unknown;
         try
         {
-            mtd = boost::beast::http::string_to_verb(req.GetMethod());
+            mtd = static_cast<Verb>(boost::beast::http::string_to_verb(req.GetMethod()));
         }
         catch (const std::exception &e)
         {
@@ -38,17 +37,17 @@ namespace Http
         return std::nullopt;
     }
 
-    void HttpRouter::AddRouter(boost::beast::http::verb method, std::string_view path, HttpHandlerFunc handler)
+    void HttpRouter::AddRouter(Verb method, std::string_view path, HttpHandlerFunc handler)
     {
         _tree[method].AddNode(path, std::move(handler));
     }
 
     void HttpRouter::AddRouter(std::string_view method, std::string_view path, HttpHandlerFunc handler)
     {
-        boost::beast::http::verb mtd = boost::beast::http::verb::unknown;
+        Verb mtd = Verb::unknown;
         try
         {
-            mtd = boost::beast::http::string_to_verb(method);
+            mtd = static_cast<Verb>(boost::beast::http::string_to_verb(method));
         }
         catch (const std::exception &e)
         {

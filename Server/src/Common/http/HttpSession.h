@@ -19,7 +19,7 @@ namespace Http
     {
     public:
         using ISession::ISession;
-        void AddRouter(boost::beast::http::verb method, std::string_view path, HttpHandlerFunc handler);
+        void AddRouter(Verb method, std::string_view path, HttpHandlerFunc handler);
 
     protected:
         void ReadHandler() override;

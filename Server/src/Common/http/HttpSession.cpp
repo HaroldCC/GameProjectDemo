@@ -6,7 +6,6 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年07月13日  20时03分26秒
 ************************************************************************/
-#include "pch.h"
 #include "HttpSession.h"
 
 #include "MessageDef.pb.h"
@@ -14,7 +13,7 @@
 
 namespace Http
 {
-    void HttpSession::AddRouter(boost::beast::http::verb method, std::string_view path, HttpHandlerFunc handler)
+    void HttpSession::AddRouter(Verb method, std::string_view path, HttpHandlerFunc handler)
     {
         _router.AddRouter(method, path, std::move(handler));
     }
@@ -38,12 +37,11 @@ namespace Http
             }
             else
             {
-                _rep.SetStatusCode(status::not_found);
+                _rep.SetStatusCode(Status::not_found);
                 _rep.SetContent(std::format("Not Found {}", _req.GetPath()));
             }
 
-            std::string_view response = _rep.GetPayload();
-            Log::Info("http Response:{}", response);
+            std::string_view   response = _rep.GetPayload();
             net::MessageBuffer sendBuffer(response.size());
             sendBuffer.Write(response);
             SendMsg(sendBuffer);

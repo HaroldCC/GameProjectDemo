@@ -6,8 +6,6 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年09月15日  16时14分57秒
 ************************************************************************/
-
-#include "pch.h"
 #include "LoginDatabase.h"
 #include "Common/include/Util.hpp"
 #include "Common/database/MySqlPreparedStatement.h"

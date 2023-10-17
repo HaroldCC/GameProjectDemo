@@ -6,8 +6,6 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年07月29日  16时37分14秒
 ************************************************************************/
-#include "pch.h"
-#include <memory>
 #include "DatabaseWorker.h"
 #include "SqlTask.h"
 

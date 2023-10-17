@@ -8,8 +8,6 @@
 ************************************************************************/
 #pragma once
 
-#include "Common/pch.h"
-
 namespace net
 {
     class MessageBuffer

@@ -108,7 +108,7 @@ private:
     [[nodiscard]] int64_t     GetInt64() const;
     [[nodiscard]] float       GetFloat() const;
     [[nodiscard]] double      GetDouble() const;
-    [[nodiscard]] char const *GetCString() const;
+    [[nodiscard]] const char *GetCString() const;
     // [[nodiscard]] std::string          GetString() const;
     // [[nodiscard]] std::string_view     GetStringView() const;
     // [[nodiscard]] std::vector<uint8_t> GetBinary() const;
@@ -177,7 +177,8 @@ public:
 
     operator std::string()
     {
-        return GetCString();
+        const char *str = GetCString();
+        return str == nullptr ? std::string{} : std::string{str};
     }
 
 private:

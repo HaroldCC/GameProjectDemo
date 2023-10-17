@@ -6,7 +6,6 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年07月27日  15时37分16秒
 ************************************************************************/
-#include "pch.h"
 #include "MysqlConnection.h"
 #include "Common/include/Log.hpp"
 #include "Common/include/Performance.hpp"

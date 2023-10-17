@@ -7,18 +7,16 @@
 > Created Time    : 2023年07月13日  19时45分54秒
 ************************************************************************/
 #pragma once
-#include <map>
 #include <string_view>
-#include "boost/beast.hpp"
-
-namespace bHttp = boost::beast::http;
+#include <memory>
+#include "HttpCommon.h"
 
 namespace Http
 {
     class HttpRequest final
     {
     public:
-        HttpRequest()                               = default;
+        HttpRequest();
         HttpRequest(HttpRequest &&)                 = default;
         HttpRequest &operator=(HttpRequest &&)      = default;
         HttpRequest(const HttpRequest &)            = default;
@@ -31,7 +29,7 @@ namespace Http
          * @param content http请求内容
          * @return bHttp::status 状态码
          */
-        bHttp::status Parse(std::string_view content);
+        Status Parse(std::string_view content);
 
         [[nodiscard]] std::string_view GetMethod() const;
         [[nodiscard]] std::string_view GetPath() const;
@@ -40,6 +38,8 @@ namespace Http
         [[nodiscard]] std::string_view GetBody() const;
 
     private:
-        bHttp::request<bHttp::string_body> _request;
+        struct HttpRequestImpl;
+        std::shared_ptr<HttpRequestImpl> _pImpl;
+        // boost::beast::http::request<boost::beast::http::string_body> _request;
     };
 } // namespace Http

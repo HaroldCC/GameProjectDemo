@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 #include <variant>
-#include <concepts>
+// #include <concepts>
 #include "Common/include/Assert.h"
 
 enum class SqlArgType : uint32_t

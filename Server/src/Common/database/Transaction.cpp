@@ -6,7 +6,6 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年09月02日  15时28分01秒
 ************************************************************************/
-#include "pch.h"
 #include "Transaction.h"
 
 TransactionBase::TransactionBase()

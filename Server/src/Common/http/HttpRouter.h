@@ -11,6 +11,8 @@
 #include <utility>
 #include "HttpRequest.h"
 #include "HttpResponse.h"
+#include <map>
+#include <optional>
 
 namespace Http
 {
@@ -117,10 +119,10 @@ namespace Http
     public:
         std::optional<HttpResponse> Handle(const HttpRequest &req);
 
-        void AddRouter(boost::beast::http::verb method, std::string_view path, HttpHandlerFunc handler);
+        void AddRouter(Verb method, std::string_view path, HttpHandlerFunc handler);
         void AddRouter(std::string_view method, std::string_view path, HttpHandlerFunc handler);
 
     private:
-        std::map<boost::beast::http::verb, HttpRouteTrie<Http::HttpHandlerFunc>> _tree;
+        std::map<Verb, HttpRouteTrie<Http::HttpHandlerFunc>> _tree;
     };
 } // namespace Http

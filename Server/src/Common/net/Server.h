@@ -10,6 +10,8 @@
 #include <thread>
 #include "asio.hpp"
 
+#include "Common/database/QueryCallback.h"
+
 namespace net
 {
     class IServer
@@ -25,11 +27,15 @@ namespace net
         void Start();
 
     protected:
+        virtual void Update();
         virtual void DoAccept() = 0;
 
     protected:
-        std::thread             _netThread;
-        asio::io_context       &_ioContext;
-        asio::ip::tcp::acceptor _accepter;
+        std::thread                                  _netThread;
+        asio::io_context                            &_ioContext;
+        asio::ip::tcp::acceptor                      _accepter;
+        asio::steady_timer                           _updateTimer;
+        std::vector<std::shared_ptr<class ISession>> _sessions;
+        QueryCallbackProcessor                       _processor;
     };
 } // namespace net

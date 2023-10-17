@@ -6,7 +6,6 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年08月03日  20时22分33秒
 ************************************************************************/
-#include "pch.h"
 #include "PreparedStatement.h"
 #include "Common/include/Assert.h"
 

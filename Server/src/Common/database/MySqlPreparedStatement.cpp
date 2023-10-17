@@ -6,9 +6,6 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年08月21日  15时13分59秒
 ************************************************************************/
-#include "pch.h"
-#include <type_traits>
-#include <variant>
 #include "MySqlTypeHack.h"
 
 #include "MySqlPreparedStatement.h"

@@ -6,7 +6,6 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年08月14日  19时36分49秒
 ************************************************************************/
-#include "pch.h"
 #include "QueryResult.h"
 #include "Common/include/Assert.h"
 #include "Field.h"

@@ -3,24 +3,20 @@ add_requires("spdlog", "doctest", "toml++",
             "boost", "openssl3", "mysql")
 
 target("Common")
-    add_rules("Debug")
+    add_rules("Debug", "protobuf.cpp")
     set_kind("static")
     add_packages("spdlog", "doctest", "toml++",
                  "asio", "protobuf-cpp", 
                  "boost", "mysql")
     add_includedirs("src/")
-    -- add_rules("protobuf.cpp")
-    -- add_files("src/proto/*.proto", {rules="protobuf.cpp"})
-    set_pcxxheader("src/Common/pch.h", {private=true})
     add_includedirs("src/Common")
     add_files("src/Common/**.cpp")
-    add_rules("protobuf.cpp")
     add_headerfiles("src/Common/**.hpp", "src/Common/**.h")
     add_files("src/Common/net/MessageProto/**.proto", 
                 "src/Common/net/*.cpp", 
                 "src/Common/http/*.cpp")
-                -- set_suffixname("_d")
     add_cxxflags("clang_cl::/FI")
+target_end()
 
 target("tests")
     add_rules("Debug")
@@ -33,15 +29,17 @@ target("tests")
     after_build(function (target) 
         os.cp("$(curdir)/conf/", target:targetdir())
     end)
+target_end()
 
 target("HttpServer")
     add_rules("Debug")
     set_kind("binary")
     add_deps("Common")
-    add_packages("spdlog", "asio", "boost")--, "mysql")
+    add_packages("spdlog", "asio")--, "boost")--, "mysql")
     add_includedirs("src", "src/Common")
-    add_headerfiles("src/Server/HttpServer/*.h")
-    add_files("src/Server/HttpServer/*.cpp")
+    add_headerfiles("src/Servers/HttpServer/*.h")
+    add_files("src/Servers/HttpServer/*.cpp")
+target_end()
 
 -- target("ServerDemo")
 --     set_kind("binary")

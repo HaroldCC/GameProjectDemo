@@ -6,10 +6,8 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年09月02日  09时10分29秒
 ************************************************************************/
-#include "pch.h"
 #include "SqlTask.h"
 
-#include <utility>
 #include "MysqlConnection.h"
 #include "QueryResult.h"
 #include "mysqld_error.h"

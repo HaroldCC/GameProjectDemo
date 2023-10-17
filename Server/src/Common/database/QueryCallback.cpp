@@ -6,7 +6,6 @@
 > Github          : www.github.com/Haroldcc
 > Created Time    : 2023年08月28日  17时08分22秒
 ************************************************************************/
-#include "pch.h"
 #include "QueryCallback.h"
 #include "Common/include/Assert.h"
 
@@ -38,14 +37,14 @@ QueryCallback &QueryCallback::operator=(QueryCallback &&right) noexcept
 
 QueryCallback &&QueryCallback::Then(std::function<void(ResultSetPtr)> &&callback)
 {
-    Assert(!_callbacks.empty() || _isPreparedResult, "错误的将字符串语句查询设置到预处理语句回调上");
+    Assert(!_callbacks.empty() || !_isPreparedResult, "错误的将字符串语句查询设置到预处理语句回调上");
     _callbacks.emplace(std::move(callback));
     return std::move(*this);
 }
 
 QueryCallback &&QueryCallback::Then(std::function<void(PreparedResultSetPtr)> &&callback)
 {
-    Assert(!_callbacks.empty() || !_isPreparedResult, "错误的将预处理语句查询设置到字符串语句回调上");
+    Assert(!_callbacks.empty() || _isPreparedResult, "错误的将预处理语句查询设置到字符串语句回调上");
     _callbacks.emplace(std::move(callback));
     return std::move(*this);
 }
@@ -68,7 +67,7 @@ bool QueryCallback::InvokeIfReady()
         return false;
     };
 
-    if (_isPreparedResult)
+    if (!_isPreparedResult)
     {
         QueryResultFuture *pFuture = std::get_if<QueryResultFuture>(&_future);
         Assert(nullptr != pFuture);

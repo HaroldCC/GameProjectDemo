@@ -18,7 +18,7 @@ rule("Debug")
         end
 
         if target:is_plat("windows") then
-            target:add("defines", "WIN32")
+            target:add("defines", "WIN32", "WIN32_LEAN_AND_MEAN")
             target:add("cxxflags", "cl::/wd4819")
         end
 

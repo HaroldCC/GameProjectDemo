@@ -18,13 +18,18 @@ namespace net
 
     IServer::IServer(asio::io_context &ioContext, uint16_t port)
         : _ioContext(ioContext), _accepter(ioContext,
-                                           asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port))
+                                           asio::ip::tcp::endpoint(asio::ip::tcp::v4(), port)),
+          _updateTimer(_ioContext)
     {
     }
 
     void IServer::Start()
     {
         DoAccept();
+
+        _updateTimer.expires_from_now(std::chrono::milliseconds(1));
+        _updateTimer.async_wait([this](const std::error_code &errc)
+                                { Update(); });
 
         _netThread = std::thread(
             [this]()
@@ -47,6 +52,29 @@ namespace net
                     }
                 }
             });
+    }
+
+    void IServer::Update()
+    {
+        _updateTimer.expires_from_now(std::chrono::milliseconds(1));
+        _updateTimer.async_wait([this](const std::error_code &errc)
+                                { Update(); });
+
+        // 处理回调
+        _processor.ProcessReadyCallbacks();
+
+        _sessions.erase(std::remove_if(_sessions.begin(), _sessions.end(),
+                                       [](const std::shared_ptr<ISession> &pSession)
+                                       {
+                                           if (!pSession->Update())
+                                           {
+                                               pSession->CloseSession();
+                                               return true;
+                                           }
+
+                                           return false;
+                                       }),
+                        _sessions.end());
     }
 
     // void Server::DoAccept()

@@ -1,4 +1,12 @@
-﻿#include "Session.h"
+﻿/*************************************************************************
+> File Name       : Session.cpp
+> Brief           : 网络会话
+> Author          : Harold
+> Mail            : 2106562095@qq.com
+> Github          : www.github.com/Haroldcc
+> Created Time    : 2023年04月04日  14时27分01秒
+************************************************************************/
+#include "Session.h"
 #include "Common/include/Log.hpp"
 #include "Common/include/Platform.h"
 #include "MessageDef.pb.h"
@@ -227,6 +235,11 @@ namespace net
                         )";
             SendProtoMessage((uint32_t)response.size(), response);
         }
+    }
+
+    bool ISession::Update()
+    {
+        return !_closed;
     }
 
 } // namespace net

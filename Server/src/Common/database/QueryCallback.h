@@ -10,6 +10,7 @@
 #include <variant>
 #include <queue>
 #include "DatabaseEnv.h"
+#include "Common/include/AsyncCallbackProcessor.h"
 
 class QueryCallback
 {
@@ -61,3 +62,5 @@ private:
     };
     std::queue<QueryCallbackData> _callbacks;
 };
+
+using QueryCallbackProcessor = AsyncCallbackProcessor<QueryCallback>;
