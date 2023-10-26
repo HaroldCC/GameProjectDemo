@@ -91,10 +91,10 @@ CheckOptions:
     value:           _
 
   # 常量使用前缀 g_ + 大驼峰
-  - key:             readability-identifier-naming.ConstantCase
-    value:           CamelCase
-  - key:             readability-identifier-naming.ConstantPrefix
-    value:           g_
+  # - key:             readability-identifier-naming.ConstantCase
+  #   value:           CamelCase
+  # - key:             readability-identifier-naming.ConstantPrefix
+  #   value:           g_
 
   # 函数使用大驼峰
   - key:             readability-identifier-naming.FunctionCase

@@ -71,7 +71,7 @@ namespace Http
             _headers.emplace_back("Host", "Harold");
         }
 
-        if (_status >= Status::not_found)
+        if (_status >= Status::NotFound)
         {
             _content.append(StatusToResponseContent(_status));
         }

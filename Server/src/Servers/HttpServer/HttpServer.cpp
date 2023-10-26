@@ -37,7 +37,7 @@ void HttpServer::InitHttpRouter(const std::shared_ptr<Http::HttpSession> &pSessi
     Assert(nullptr != pSession);
 
     pSession->AddRouter(HttpMethod::GET, "/", [](const Http::HttpRequest &request, Http::HttpResponse &resp) {
-        resp.SetStatusCode(Status::ok);
+        resp.SetStatusCode(Status::Ok);
         std::string_view body = "Hello 你好!";
         resp.SetContent(body);
         return;
@@ -85,13 +85,13 @@ void HttpServer::InitHttpRouter(const std::shared_ptr<Http::HttpSession> &pSessi
                     if (nullptr == pResult)
                     {
                         // Log::Debug("{}", "查询失败");
-                        resp.SetStatusCode(Status::internal_server_error);
+                        resp.SetStatusCode(Status::InternalServerError);
                         resp.SetContent("结果出错！！！");
                     }
                     else
                     {
                         // Log ::Debug("{}查询失败", 1);
-                        resp.SetStatusCode(Status::ok);
+                        resp.SetStatusCode(Status::Ok);
                         // resp.SetContent(std::format("async id = {}, name = {}, age = {}, intro = {}", pResult->Fetch()))
                         Field *pFields = pResult->Fetch();
                         Log::Debug("{}",
@@ -118,7 +118,7 @@ void HttpServer::GetUserInfo(const Http::HttpRequest &request, Http::HttpRespons
     auto pAccountInfoStmt = g_LoginDatabaseStmtMap.find(LOGIN_SEL_ACCOUNT_BY_EMAIL);
     if (pAccountInfoStmt == g_LoginDatabaseStmtMap.end())
     {
-        resp.SetStatusCode(Status::internal_server_error);
+        resp.SetStatusCode(Status::InternalServerError);
     }
     else
     {
@@ -133,7 +133,7 @@ void HttpServer::GetUserInfo(const Http::HttpRequest &request, Http::HttpRespons
         PreparedResultSetPtr pResult = g_LoginDatabase.SyncQuery(pStmt);
         if (nullptr == pResult)
         {
-            resp.SetStatusCode(Status::internal_server_error);
+            resp.SetStatusCode(Status::InternalServerError);
             return;
         }
 
@@ -154,6 +154,6 @@ void HttpServer::GetUserInfo(const Http::HttpRequest &request, Http::HttpRespons
             std::format("id:{}, email:{}, name:{}, age:{}, intro:{}", id, email, strName, age, intro));
         Log::Debug("id:{}, email:{}, name:{}, age:{}, intro:{}", id, email, strName, age, intro);
 
-        resp.SetStatusCode(Status::ok);
+        resp.SetStatusCode(Status::Ok);
     }
 }

@@ -37,7 +37,7 @@ namespace Http
     private:
         using ResponseHeader = std::pair<std::string, std::string>;
 
-        Status                      _status      = Status::unknown;
+        Status                      _status      = Status::Unknown;
         ContentType                 _contentType = ContentType::String;
         std::string                 _head;
         std::string                 _content;
