@@ -8,72 +8,89 @@
 ************************************************************************/
 #include "HttpResponse.h"
 #include "Common/include/Log.hpp"
-#include "boost/beast.hpp"
+#include "Common/include/Util.hpp"
+#include "Common/include/TimeUtil.hpp"
+#include "HttpUtil.hpp"
+#include <algorithm>
 
 namespace Http
 {
-    struct HttpResponse::HttpResponseImpl
-    {
-        boost::beast::http::response<boost::beast::http::string_body> _response;
-    };
-
-    HttpResponse::HttpResponse()
-        : _pImpl(std::make_shared<HttpResponseImpl>())
-    {
-    }
-
     /**
      * @brief 获取要发送的Http响应内容
      *
      * @return std::string_view 响应内容
      */
-    [[nodiscard]] std::string_view HttpResponse::GetPayload() const
+    [[nodiscard]] std::string_view HttpResponse::GetPayload()
     {
-        std::ostringstream oss;
-        oss << _pImpl->_response;
-
-        return oss.view();
+        BuildResponseHead();
+        _head.append(std::format("{}\r\n{}", ContentTypeString(_contentType), _content));
+        return _head;
     }
 
     void HttpResponse::SetStatusCode(Status status)
     {
-        _pImpl->_response.result(static_cast<boost::beast::http::status>(status));
+        _status = status;
     }
 
     void HttpResponse::SetHeader(std::string_view fieldName, std::string_view fieldVal)
     {
-        try
-        {
-            _pImpl->_response.set(fieldName, fieldName);
-        }
-        catch (const std::exception &e)
-        {
-            Log::Error("Http set header error:{}", e.what());
-        }
+        _headers.emplace_back(fieldName, fieldVal);
     }
 
-    void HttpResponse::SetHeader(Field field, std::string_view fieldVal)
+    // void HttpResponse::SetHeader(Field field, std::string_view fieldVal)
+    // {
+    //     _headers.emplace_back()
+    // }
+
+    void HttpResponse::SetContentType(ContentType type)
     {
-        try
-        {
-            _pImpl->_response.set(static_cast<boost::beast::http::field>(field), fieldVal);
-        }
-        catch (const std::exception &e)
-        {
-            Log::Error("Http set header error:{}", e.what());
-        }
+        _contentType = type;
     }
 
     void HttpResponse::SetContent(std::string_view content)
     {
-        try
+        _content = content;
+    }
+
+    void HttpResponse::FillResponse(Status status, ContentType type, std::string_view content)
+    {
+        _status      = status;
+        _contentType = type;
+        _content     = content;
+    }
+
+    void HttpResponse::BuildResponseHead()
+    {
+        if (std::find_if(_headers.begin(),
+                         _headers.end(),
+                         [](ResponseHeader &header) {
+                             return header.first == "Host";
+                         })
+            == _headers.end())
         {
-            size_t length = content.size();
-            _pImpl->_response.set(static_cast<boost::beast::http::field>(Field::content_length), std::format("{}\r\n\r\n{}", length, content));
+            _headers.emplace_back("Host", "Harold");
         }
-        catch (const std::exception &e)
+
+        if (_status >= Status::not_found)
         {
-            Log::Error("Http set body error:{}", e.what());
+            _content.append(StatusToResponseContent(_status));
+        }
+
+        if (_content.empty())
+        {
+            _headers.emplace_back("Content-Length", "0");
+        }
+        else
+        {
+            _headers.emplace_back("Content-Length", Util::ToString(_content.size()));
+        }
+
+        _headers.emplace_back("Date", Util::TimeUtil::GetGmtTimeStr());
+
+        _head.append(StatusToResponseHead(_status));
+        for (auto &[k, v] : _headers)
+        {
+            _head.append(std::format("{}:{}\r\n", k, v));
         }
     }
 } // namespace Http

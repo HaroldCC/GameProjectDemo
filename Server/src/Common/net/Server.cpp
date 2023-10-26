@@ -64,7 +64,7 @@ namespace net
         _processor.ProcessReadyCallbacks();
 
         _sessions.erase(std::remove_if(_sessions.begin(), _sessions.end(),
-                                       [](const std::shared_ptr<ISession> &pSession)
+                                       [](std::shared_ptr<ISession> pSession)
                                        {
                                            if (!pSession->Update())
                                            {

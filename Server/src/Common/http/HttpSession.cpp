@@ -13,9 +13,9 @@
 
 namespace Http
 {
-    void HttpSession::AddRouter(Verb method, std::string_view path, HttpHandlerFunc handler)
+    void HttpSession::AddRouter(HttpMethod method, std::string_view path, HttpHandlerFunc handler)
     {
-        _router.AddRouter(method, path, std::move(handler));
+        _router.AddHttpHandler(method, path, std::move(handler));
     }
 
     void HttpSession::ReadHandler()
@@ -31,15 +31,7 @@ namespace Http
         {
             Log::Info("Http:{}", content);
             _req.Parse(content);
-            if (auto rep = _router.Handle(_req); rep.has_value())
-            {
-                _rep = rep.value();
-            }
-            else
-            {
-                _rep.SetStatusCode(Status::not_found);
-                _rep.SetContent(std::format("Not Found {}", _req.GetPath()));
-            }
+            _router.Route(_req, _rep);
 
             std::string_view   response = _rep.GetPayload();
             net::MessageBuffer sendBuffer(response.size());

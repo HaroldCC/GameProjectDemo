@@ -8,21 +8,14 @@
 ************************************************************************/
 #pragma once
 #include <string_view>
-#include <memory>
 #include "HttpCommon.h"
+#include "HttpParser.h"
 
 namespace Http
 {
     class HttpRequest final
     {
     public:
-        HttpRequest();
-        HttpRequest(HttpRequest &&)                 = default;
-        HttpRequest &operator=(HttpRequest &&)      = default;
-        HttpRequest(const HttpRequest &)            = default;
-        HttpRequest &operator=(const HttpRequest &) = default;
-        ~HttpRequest()                              = default;
-
         /**
          * @brief 解析http请求内容
          *
@@ -38,8 +31,6 @@ namespace Http
         [[nodiscard]] std::string_view GetBody() const;
 
     private:
-        struct HttpRequestImpl;
-        std::shared_ptr<HttpRequestImpl> _pImpl;
-        // boost::beast::http::request<boost::beast::http::string_body> _request;
+        HttpParser _parser;
     };
 } // namespace Http

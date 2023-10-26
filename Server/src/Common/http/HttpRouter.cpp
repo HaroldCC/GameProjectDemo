@@ -9,52 +9,49 @@
 #include "HttpRouter.h"
 
 #include "Common/include/Log.hpp"
-#include "boost/beast.hpp"
+#include "HttpUtil.hpp"
 
 namespace Http
 {
-    std::optional<HttpResponse> HttpRouter::Handle(const HttpRequest &req)
+    void HttpRouter::Route(const HttpRequest &req, HttpResponse &resp)
     {
-        Verb mtd = Verb::unknown;
-        try
-        {
-            mtd = static_cast<Verb>(boost::beast::http::string_to_verb(req.GetMethod()));
-        }
-        catch (const std::exception &e)
-        {
-            Log::Error("添加路由失败：{} 路由信息：[{} {}]", e.what(), req.GetMethod(), req.GetPath());
-            return std::nullopt;
-        }
+        std::string methodWholeName = std::format("{} {}", req.GetMethod(), req.GetPath());
 
-        if (auto iter = _tree.find(mtd); iter != _tree.end())
+        if (auto iter = _httpHandlers.find(methodWholeName); iter != _httpHandlers.end())
         {
-            if (auto node = iter->second.FindNode(req.GetPath()); node.has_value())
+            try
             {
-                return node.value()(req);
+                iter->second(req, resp);
+            }
+            catch (const std::exception &e)
+            {
+                Log::Critical("Http方法抛出异常, reason:{}", e.what());
+                resp.SetStatusCode(Status::service_unavailable);
+            }
+            catch (...)
+            {
+                Log::Critical("Http抛出未知异常!!!");
+                resp.SetStatusCode(Status::service_unavailable);
             }
         }
-
-        return std::nullopt;
-    }
-
-    void HttpRouter::AddRouter(Verb method, std::string_view path, HttpHandlerFunc handler)
-    {
-        _tree[method].AddNode(path, std::move(handler));
-    }
-
-    void HttpRouter::AddRouter(std::string_view method, std::string_view path, HttpHandlerFunc handler)
-    {
-        Verb mtd = Verb::unknown;
-        try
+        else
         {
-            mtd = static_cast<Verb>(boost::beast::http::string_to_verb(method));
+            resp.SetStatusCode(Status::not_found);
         }
-        catch (const std::exception &e)
+    }
+
+    void HttpRouter::AddHttpHandler(HttpMethod method, std::string_view path, HttpHandlerFunc handler)
+    {
+        std::string_view methodName = HttpMethodToString(method);
+        std::string      wholeStr   = std::format("{} {}", methodName, path);
+
+        auto [it, ok] = _pathKeys.emplace(std::move(wholeStr));
+        if (!ok)
         {
-            Log::Error("添加路由失败：{} 路由信息：[{} {}]", e.what(), method, path);
+            Log::Critical("http {} 已经注册");
             return;
         }
 
-        AddRouter(mtd, path, std::move(handler));
+        _httpHandlers.emplace(*it, std::move(handler));
     }
 } // namespace Http

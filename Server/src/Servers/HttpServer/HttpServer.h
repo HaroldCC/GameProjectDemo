@@ -18,8 +18,8 @@ private:
 protected:
     void DoAccept() override;
 
-    std::optional<Http::HttpResponse> GetUserInfo(const Http::HttpRequest &request);
-    std::optional<Http::HttpResponse> Sql(const Http::HttpRequest &request);
+    void GetUserInfo(const Http::HttpRequest &request, Http::HttpResponse &resp);
+    void Sql(const Http::HttpRequest &request, Http::HttpResponse &resp);
 
     void InitHttpRouter(const std::shared_ptr<Http::HttpSession> &pSession);
 };

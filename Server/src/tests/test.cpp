@@ -14,6 +14,8 @@
 #include "mysql.h"
 #include "Common/threading/ProducerConsumerQueue.hpp"
 #include "Common/include/Assert.h"
+#include "Common/http/HttpCommon.h"
+#include "magic_enum.hpp"
 
 namespace http = boost::beast::http;
 
@@ -72,18 +74,22 @@ public:
     {
         return _method;
     }
+
     [[nodiscard]] std::string GetPath() const
     {
         return path_;
     }
+
     [[nodiscard]] std::string GetVersion() const
     {
         return _version;
     }
+
     [[nodiscard]] const std::map<std::string, std::string> &GetHeaders() const
     {
         return _headers;
     }
+
     [[nodiscard]] std::string getBody() const
     {
         return _body;
@@ -270,7 +276,7 @@ int main(int argc, char **argv)
 
     // 测试
     uint8_t              header = 1;
-    std::vector<uint8_t> buff{01, 22, 3, 4, 5};
+    std::vector<uint8_t> buff {01, 22, 3, 4, 5};
     std::vector<uint8_t> packet;
     packet.reserve(sizeof(header) + buff.size());
     packet.push_back(header);
@@ -315,8 +321,7 @@ int main(int argc, char **argv)
 
     // Log::debug("{}", responseContent);
 
-    auto testMapJoinKey = []()
-    {
+    auto testMapJoinKey = []() {
         Util::Timer                               timer;
         std::unordered_map<std::string_view, int> map;
         for (int i = 0; i < 10000; ++i)
@@ -325,11 +330,14 @@ int main(int argc, char **argv)
             std::string strKey = str1 + std::to_string(i);
             map[strKey]        = i;
         }
-        Log::Debug("tesMapJoinKey map.size() = {}, {}, {}, {}", map.size(), timer.ElapsedNanosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
+        Log::Debug("tesMapJoinKey map.size() = {}, {}, {}, {}",
+                   map.size(),
+                   timer.ElapsedNanosec(),
+                   timer.ElapsedMillisec(),
+                   timer.ElapsedSec());
     };
 
-    auto testMapMap = []()
-    {
+    auto testMapMap = []() {
         Util::Timer                                                                     timer;
         std::unordered_map<std::string_view, std::unordered_map<std::string_view, int>> map;
         for (int i = 0; i < 10000; ++i)
@@ -338,7 +346,11 @@ int main(int argc, char **argv)
             con[std::to_string(i).data()] = i;
         }
 
-        Log::Debug("testMapMap map.size() = {}, {}, {}, {}", map.size(), timer.ElapsedNanosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
+        Log::Debug("testMapMap map.size() = {}, {}, {}, {}",
+                   map.size(),
+                   timer.ElapsedNanosec(),
+                   timer.ElapsedMillisec(),
+                   timer.ElapsedSec());
     };
 
     testMapJoinKey();
@@ -350,7 +362,10 @@ int main(int argc, char **argv)
 
     Util::Timer timer;
     std::this_thread::sleep_for(2s);
-    Log::Debug("micro:{}, milisec:{}, sec:{}", timer.ElapsedMicrosec(), timer.ElapsedMillisec(), timer.ElapsedSec());
+    Log::Debug("micro:{}, milisec:{}, sec:{}",
+               timer.ElapsedMicrosec(),
+               timer.ElapsedMillisec(),
+               timer.ElapsedSec());
 
     Log::Debug("---------------------------test ProducerConsumerQueue-------------------");
     ProducerConsumerQueue<int *> queueIntPointer;
@@ -370,16 +385,17 @@ int main(int argc, char **argv)
         queueIntPointer.Push(tmp);
     }
 
-    std::thread tConsumer([&]()
-                          {
-                            while(!queueIntPointer.Empty())
-                                {
-                            auto intPointer = queueIntPointer.WaitAndPop() ;
-                            if (nullptr != intPointer)
-                            {
-                                // std::cout << *intPointer << std::endl;
-                                Log::Debug("pop:{}", *intPointer);
-                            } } });
+    std::thread tConsumer([&]() {
+        while (!queueIntPointer.Empty())
+        {
+            auto intPointer = queueIntPointer.WaitAndPop();
+            if (nullptr != intPointer)
+            {
+                // std::cout << *intPointer << std::endl;
+                Log::Debug("pop:{}", *intPointer);
+            }
+        }
+    });
 
     ProducerConsumerQueue<int> queueInt;
     // std::thread                tIntProducer([&]()
@@ -395,12 +411,13 @@ int main(int argc, char **argv)
         queueInt.Push(i);
     }
 
-    std::thread tIntCustomer([&]()
-                             {
-            while(!queueInt.Empty())
+    std::thread tIntCustomer([&]() {
+        while (!queueInt.Empty())
         {
-                auto i = queueInt.WaitAndPop();
-                                 Log::Debug("i:{}", i); } });
+            auto i = queueInt.WaitAndPop();
+            Log::Debug("i:{}", i);
+        }
+    });
 
     // tProducer.join();
     tConsumer.join();
@@ -408,6 +425,7 @@ int main(int argc, char **argv)
     tIntCustomer.join();
 
     Log::Debug("-------------------------------unique_ptr---------------------");
+
     struct A
     {
         A()
@@ -420,6 +438,7 @@ int main(int argc, char **argv)
             Log::Debug("A::OpMtor");
             return *this;
         }
+
         A(const A &)
         {
             Log::Debug("A::Ctor");
@@ -492,6 +511,35 @@ int main(int argc, char **argv)
         strView                 = std::move(strTmp);
     }
     Log::Debug("{}", strView);
+
+    std::chrono::system_clock::time_point t = std::chrono::system_clock::now();
+    Log::Debug(std::format("{:%a, %d %b %Y %H:%M:%OS}", t));
+
+    std::vector<Http::Status> vecStatus = {Http::Status::unknown,
+                                           Http::Status::switching_protocols,
+                                           Http::Status::ok,
+                                           Http::Status::created,
+                                           Http::Status::accepted,
+                                           Http::Status::no_content,
+                                           Http::Status::partial_content,
+                                           Http::Status::multiple_choices,
+                                           Http::Status::moved_permanently,
+                                           Http::Status::moved_temporarily,
+                                           Http::Status::not_modified,
+                                           Http::Status::temporary_redirect,
+                                           Http::Status::bad_request,
+                                           Http::Status::unauthorized,
+                                           Http::Status::forbidden,
+                                           Http::Status::not_found,
+                                           Http::Status::conflict,
+                                           Http::Status::internal_server_error,
+                                           Http::Status::not_implemented,
+                                           Http::Status::bad_gateway,
+                                           Http::Status::service_unavailable};
+    for (size_t i = 0; i < vecStatus.size(); ++i)
+    {
+        Log::Warn("{}:{}", (int)vecStatus[i], magic_enum::enum_name(vecStatus[i]));
+    }
 
     return 0;
 }
