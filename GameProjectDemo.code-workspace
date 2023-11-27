@@ -1,12 +1,8 @@
 {
     "folders": [
         {
-            "name": "Root",
+            // "name": "Root",
             "path": "."
-        },
-        {
-            "name": "Server",
-            "path": "./Server",
         },
     ],
     "settings": {

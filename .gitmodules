@@ -1,3 +1,15 @@
 [submodule "tools/profiler/tracy"]
 	path = tools/profiler/tracy
 	url = https://github.com/HaroldCC/tracy.git
+[submodule "3rdParty/asio"]
+	path = 3rdParty/asio
+	url = https://github.com/chriskohlhoff/asio.git
+[submodule "3rdParty/spdlog"]
+	path = 3rdParty/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "3rdParty/lua"]
+	path = 3rdParty/lua
+	url = https://github.com/lua/lua.git
+[submodule "3rdParty/magic_enum"]
+	path = 3rdParty/magic_enum
+	url = https://github.com/Neargye/magic_enum.git

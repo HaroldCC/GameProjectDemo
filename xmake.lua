@@ -5,14 +5,12 @@ set_languages("c++20")
 
 set_targetdir("Bin/$(plat)-$(arch)-$(mode)")
 
-----------------------------------------------------------
---- @brief debug模式设置
-----------------------------------------------------------
-rule("Debug")
+add_requires("protobuf-cpp", "swig")
+
+rule("CommonRule")
     on_load(function (target) 
         if is_mode("debug") then
             target:add("defines", "DEBUG", "PERFORMANCE_DECT")
-            target:set("suffixname", "_d")
             target:set("symbols", "debug")
             target:set("optimize", "none")
         end
@@ -20,22 +18,10 @@ rule("Debug")
         if target:is_plat("windows") then
             target:add("defines", "WIN32", "WIN32_LEAN_AND_MEAN")
             target:add("cxxflags", "cl::/wd4819")
+            target:add("defines", "_CRT_SECURE_NO_WARNINGS")
         end
 
         if target:is_plat("windows") then
-            target:add("defines", "_CRT_SECURE_NO_WARNINGS")
-        end
-    end)
-rule_end()
-
-----------------------------------------------------------
---- @brief 添加Profiler
-----------------------------------------------------------
-rule("Profiler")
-    on_load(function (target) 
-        if is_mode("debug") then
-            target:add("files", "$(projectdir)/tools/profiler/tracy/public/TracyClient.cpp")
-            target:add("defines", "TRACY_ENABLE")
         end
     end)
 rule_end()
@@ -45,4 +31,6 @@ add_rules("plugin.vsxmake.autoupdate")
 add_rules("plugin.compile_commands.autoupdate", {outputdir="$(projectdir)/.vscode"})
 
 
-includes("Server")
+includes("Src/Common")
+includes("Src/Servers")
+includes("3rdParty")

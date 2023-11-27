@@ -74,9 +74,9 @@ CheckOptions:
 
   # 类常量使用前缀 _k + 大驼峰
   - key:             readability-identifier-naming.ClassConstantCase
-    value:           CamelCase
-  - key:             readability-identifier-naming.ClassConstantPrefix
-    value:           _k
+    value:           UPPER_CASE
+  # - key:             readability-identifier-naming.ClassConstantPrefix
+  #   value:           _k
 
   # 类成员变量使用前缀 _ + 小驼峰
   - key:             readability-identifier-naming.PrivateMemberCase
